@@ -1,0 +1,4 @@
+requests>=2.31.0
+colorama>=0.4.6
+prettytable>=3.9.0
+
