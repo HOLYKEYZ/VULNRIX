@@ -5,7 +5,6 @@ A privacy-first tool that scans the internet for exposed personal data.
 
 import os
 import sys
-import time
 from typing import Optional, Tuple
 from colorama import Fore, Style
 
@@ -19,6 +18,7 @@ from search_engine import SearchEngine
 from breach_check import BreachChecker
 from risk_analyzer import RiskAnalyzer
 from privacy_advisor import PrivacyAdvisor
+from api_key_manager import APIKeyManager, get_api_key_for_search
 
 
 def get_user_input() -> Tuple[Optional[str], Optional[str], Optional[str]]:
@@ -46,38 +46,80 @@ def get_user_input() -> Tuple[Optional[str], Optional[str], Optional[str]]:
     return name, email, username
 
 
-def load_api_config() -> Tuple[str, str, Optional[str], Optional[str]]:
-    """
-    Load API configuration from environment variables or config file.
+def main():
+    """Main function to run Digital Footprint Shield."""
+    # Set terminal background to black (if supported)
+    os.system('color 0F' if sys.platform == 'win32' else '')
     
-    Returns:
-        Tuple of (google_api_key, google_search_engine_id, hibp_api_key, grok_api_key)
-    """
-    # Try environment variables first
-    google_api_key = os.getenv('GOOGLE_API_KEY', 'YOUR_API_KEY_HERE')
-    google_search_engine_id = os.getenv('GOOGLE_SEARCH_ENGINE_ID', 'YOUR_SEARCH_ENGINE_ID_HERE')
-    hibp_api_key = os.getenv('HIBP_API_KEY', None)
-    grok_api_key = os.getenv('GROK_API_KEY', None)
+    # Display banner and disclaimer
+    print_banner()
+    print_disclaimer()
     
-    # Try config file if environment variables not set
-    config_file = os.path.join(os.path.dirname(__file__), 'config.txt')
-    if os.path.exists(config_file):
-        try:
-            with open(config_file, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith('GOOGLE_API_KEY='):
-                        google_api_key = line.split('=', 1)[1]
-                    elif line.startswith('GOOGLE_SEARCH_ENGINE_ID='):
-                        google_search_engine_id = line.split('=', 1)[1]
-                    elif line.startswith('HIBP_API_KEY='):
-                        hibp_api_key = line.split('=', 1)[1]
-                    elif line.startswith('GROK_API_KEY='):
-                        grok_api_key = line.split('=', 1)[1]
-        except Exception as e:
-            print_warning(f"⚠️  Could not read config file: {e}")
+    # Get user input
+    name, email, username = get_user_input()
+    if not name and not email and not username:
+        return
     
-    return google_api_key, google_search_engine_id, hibp_api_key, grok_api_key
+    # Initialize API Key Manager
+    key_manager = APIKeyManager()
+    
+    # Get Google API key & CSE ID dynamically
+    google_api_key, google_search_engine_id = get_api_key_for_search(key_manager)
+    
+    if not google_api_key or not google_search_engine_id:
+        print_warning("⚠️ Google Custom Search unavailable. Web scan will be skipped.")
+    
+    # Initialize components
+    search_engine = SearchEngine(google_api_key, google_search_engine_id)
+    breach_checker = BreachChecker()
+    risk_analyzer = RiskAnalyzer()
+    privacy_advisor = PrivacyAdvisor(None)  # HIBP or Grok optional; keep None if no key
+    
+    # Perform searches
+    print_section_header("SCANNING IN PROGRESS")
+    print_info("Please wait while we scan the internet for your information...\n")
+    
+    search_results = search_engine.find_mentions(name=name, email=email, username=username)
+    
+    # Check breaches (only if email provided)
+    breach_data = {'breaches': [], 'pastes': [], 'total_breaches': 0}
+    if email:
+        breach_data = breach_checker.check_email(email, None)  # HIBP key optional
+    
+    # Calculate risk score with breakdown
+    risk_score, breakdown = risk_analyzer.calculate_risk_score(
+        search_results=search_results,
+        breach_data=breach_data,
+        has_name=bool(name),
+        has_email=bool(email),
+        has_username=bool(username),
+        name=name
+    )
+    
+    # Get AI-powered recommendations
+    recommendations = privacy_advisor.get_recommendations(
+        breakdown, search_results, breach_data
+    )
+    
+    # Display results
+    print("\n" + "=" * 60)
+    print_section_header("SCAN RESULTS")
+    
+    display_search_results(search_results)
+    
+    if email:
+        display_breach_results(breach_data)
+    
+    # Display risk breakdown
+    display_risk_breakdown(breakdown)
+    
+    # Display recommendations
+    display_risk_assessment(risk_score, recommendations)
+    
+    # Final message
+    print_separator()
+    print_info("\n✨ Scan complete! Remember: All scans are local. No data is stored.")
+    print_info("Thank you for using Digital Footprint Shield! 🛡️\n")
 
 
 def display_search_results(search_results: dict):
@@ -240,76 +282,6 @@ def display_risk_assessment(score: int, recommendations: list):
         print(f"  {i}. {rec}")
 
 
-def main():
-    """Main function to run Digital Footprint Shield."""
-    # Set terminal background to black (if supported)
-    os.system('color 0F' if sys.platform == 'win32' else '')
-    
-    # Display banner and disclaimer
-    print_banner()
-    print_disclaimer()
-    
-    # Get user input
-    name, email, username = get_user_input()
-    if not name and not email and not username:
-        return
-    
-    # Load API configuration
-    google_api_key, google_search_engine_id, hibp_api_key, grok_api_key = load_api_config()
-    
-    # Initialize components
-    search_engine = SearchEngine(google_api_key, google_search_engine_id)
-    breach_checker = BreachChecker()
-    risk_analyzer = RiskAnalyzer()
-    privacy_advisor = PrivacyAdvisor(grok_api_key)
-    
-    # Perform searches
-    print_section_header("SCANNING IN PROGRESS")
-    print_info("Please wait while we scan the internet for your information...\n")
-    
-    search_results = search_engine.find_mentions(name=name, email=email, username=username)
-    
-    # Check breaches (only if email provided)
-    breach_data = {'breaches': [], 'pastes': [], 'total_breaches': 0}
-    if email:
-        breach_data = breach_checker.check_email(email, hibp_api_key)
-    
-    # Calculate risk score with breakdown
-    risk_score, breakdown = risk_analyzer.calculate_risk_score(
-        search_results=search_results,
-        breach_data=breach_data,
-        has_name=bool(name),
-        has_email=bool(email),
-        has_username=bool(username),
-        name=name
-    )
-    
-    # Get AI-powered recommendations
-    recommendations = privacy_advisor.get_recommendations(
-        breakdown, search_results, breach_data
-    )
-    
-    # Display results
-    print("\n" + "=" * 60)
-    print_section_header("SCAN RESULTS")
-    
-    display_search_results(search_results)
-    
-    if email:
-        display_breach_results(breach_data)
-    
-    # Display risk breakdown
-    display_risk_breakdown(breakdown)
-    
-    # Display recommendations
-    display_risk_assessment(risk_score, recommendations)
-    
-    # Final message
-    print_separator()
-    print_info("\n✨ Scan complete! Remember: All scans are local. No data is stored.")
-    print_info("Thank you for using Digital Footprint Shield! 🛡️\n")
-
-
 if __name__ == "__main__":
     try:
         main()
@@ -319,4 +291,3 @@ if __name__ == "__main__":
     except Exception as e:
         print_danger(f"\n❌ An unexpected error occurred: {str(e)}")
         sys.exit(1)
-
