@@ -6,7 +6,11 @@ Uses environment variables for API key configuration.
 
 import os
 from typing import Optional, Tuple
+from dotenv import load_dotenv
 from utils.display import print_warning, print_danger, print_info
+
+# Load environment variables from .env file (for local development)
+load_dotenv()
 
 
 class ConfigurationError(Exception):

@@ -7,6 +7,10 @@ from flask import Flask, render_template, request, jsonify
 import os
 import sys
 from typing import Optional, Tuple
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (for local development)
+load_dotenv()
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
@@ -17,7 +21,12 @@ from risk_analyzer import RiskAnalyzer
 from privacy_advisor import PrivacyAdvisor
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
+# Use FLASK_SECRET_KEY from environment if available, otherwise generate one
+flask_secret = os.getenv('FLASK_SECRET_KEY')
+if flask_secret:
+    app.config['SECRET_KEY'] = flask_secret
+else:
+    app.config['SECRET_KEY'] = os.urandom(24).hex()
 
 
 class ConfigurationError(Exception):
@@ -193,7 +202,7 @@ def scan():
                     'score': breakdown.get('sensitive_exposure', {}).get('score', 0),
                     'breakdown': breakdown.get('sensitive_exposure', {}).get('breakdown', {})
                 },
-                'is_famous': breakdown.get('is_famous', False)
+            'is_famous': breakdown.get('is_famous', False)
             },
             'recommendations': recommendations
         }

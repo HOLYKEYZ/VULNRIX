@@ -6,7 +6,11 @@ A privacy-first tool that scans the internet for exposed personal data.
 import os
 import sys
 from typing import Optional, Tuple
+from dotenv import load_dotenv
 from colorama import Fore, Style
+
+# Load environment variables from .env file (for local development)
+load_dotenv()
 
 from utils.display import (
     print_banner, print_disclaimer, print_section_header,
