@@ -49,9 +49,11 @@
                 </button>
             </form>
             
-            <div class="mt-6 text-center text-sm text-muted">
-                Don't have an account? 
-                <a href="{% url 'accounts:register' %}" class="underline underline-offset-4 hover:text-primary">Sign up</a>
+            <div class="mt-6 text-center">
+                <p class="text-xs text-muted mb-2">Don't have an account?</p>
+                <a href="{% url 'accounts:register' %}" class="btn w-full !bg-green-600 !text-white hover:!bg-green-700 shadow-md border-green-600">
+                    Sign up
+                </a>
             </div>
         </div>
     </div>
