@@ -70,17 +70,31 @@ VULNRIX/
 
 Deployment
 
-Set these for production:
+Set these for production (Environment Variables):
 
-DEBUG=False
-SECRET_KEY=<long-random-key>
-ALLOWED_HOSTS=your-domain.com
+| Variable | Value |
+| :--- | :--- |
+| `DEBUG` | `False` |
+| `SECRET_KEY` | `<long-random-key>` |
+| `ALLOWED_HOSTS` | `vulnrix.onrender.com` |
+| `DATABASE_URL` | `postgres://...` (from Supabase/Neon) |
+| `PYTHONUNBUFFERED` | `true` |
+| `DJANGO_SETTINGS_MODULE` | `digitalshield.settings` |
 
+### Database Setup (Supabase/Neon)
+1. Create a free database on [Supabase](https://supabase.com) or [Neon](https://neon.tech).
+2. Copy the **Connection String** (Transaction Mode / port 6543 or 5432).
+3. Add it as `DATABASE_URL` in Render.
 
-Then:
+### Render Build Command
+```bash
+pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+```
 
-python manage.py collectstatic
+### Render Start Command
+```bash
 gunicorn digitalshield.wsgi:application
+```
 
 License
 
