@@ -50,7 +50,7 @@ class SecurityPipeline:
             return GroqProvider()
         elif os.getenv("OPENAI_API_KEY"):
             return OpenAIProvider(model="gpt-3.5-turbo")
-        elif os.getenv("GOOGLE_API_KEY"):
+        elif os.getenv("GEMINI_API_KEY"):
             return GeminiProvider(model="gemini-1.5-flash")
         return None
 
@@ -58,7 +58,7 @@ class SecurityPipeline:
         """Get strong provider for Phase 2 (Gemini/Claude/GPT-4)"""
         if not HAS_PROVIDERS: return None
         
-        if os.getenv("GOOGLE_API_KEY"):
+        if os.getenv("GEMINI_API_KEY"):
             return GeminiProvider(model="gemini-1.5-pro")
         elif os.getenv("ANTHROPIC_API_KEY"):
             return ClaudeProvider()

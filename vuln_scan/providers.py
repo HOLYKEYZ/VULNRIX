@@ -3,7 +3,7 @@ LLM Providers using only requests - NO SDK REQUIRED
 This single file REPLACES the entire providers/ folder.
 
 Just set your API keys as environment variables:
-    GOOGLE_API_KEY                  - for Gemini
+    GEMINI_API_KEY                  - for Gemini
     OPENAI_API_KEY                  - for OpenAI
     ANTHROPIC_API_KEY or CLAUDE_KEY - for Claude  
     GROQ_KEY                    - for Groq
@@ -52,9 +52,9 @@ class GeminiProvider(LLMProvider):
     ]
     
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY required")
+            raise ValueError("GEMINI_API_KEY required")
         
         # If a specific model is requested, try that first. Otherwise start with fallbacks.
         self.requested_model = model or os.getenv("GEMINI_MODEL")
@@ -418,7 +418,7 @@ def list_providers() -> List[str]:
     """List available providers based on env vars"""
     providers = []
     
-    if os.getenv("GOOGLE_API_KEY"):
+    if os.getenv("GEMINI_API_KEY"):
         providers.append("gemini")
     if os.getenv("OPENAI_API_KEY"):
         providers.append("openai")
