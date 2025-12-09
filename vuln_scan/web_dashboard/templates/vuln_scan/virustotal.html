@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}VirusTotal Scanner - VULNRIX{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-4xl pb-10">
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-shield-virus text-3xl text-primary"></i>
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight mb-2">VirusTotal Scanner</h1>
+        <p class="text-muted">Analyze suspicious files using 70+ antivirus engines via VirusTotal API.</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card p-0 overflow-hidden">
+        
+        <!-- Upload Zone -->
+        <div class="p-12 text-center cursor-pointer hover:bg-muted/30 transition-colors border-2 border-dashed border-transparent hover:border-primary/50 relative group" id="dropZone">
+            <div class="pointer-events-none">
+                <div class="w-20 h-20 bg-background rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm group-hover:scale-105 transition-transform">
+                    <i class="fas fa-cloud-upload-alt text-3xl text-primary"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Upload File for Analysis</h3>
+                <p class="text-muted text-sm mb-6">Drag & drop or click to browse</p>
+                <div class="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                    <i class="fas fa-info-circle"></i> Max size: 32MB • All file types supported
+                </div>
+            </div>
+            <input type="file" id="fileInput" class="hidden">
+        </div>
+
+        <!-- File Info (Hidden by default) -->
+        <div class="hidden bg-muted/30 border-t border-border p-4" id="fileInfo">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary border border-border">
+                        <i class="fas fa-file"></i>
+                    </div>
+                    <div>
+                        <div id="fileName" class="font-medium">filename.exe</div>
+                        <div id="fileSize" class="text-xs text-muted">0 KB</div>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn--ghost btn--sm" onclick="clearFile()">Cancel</button>
+                    <button class="btn btn--primary btn--sm" onclick="scanFile()">
+                        <i class="fas fa-microscope mr-2"></i> Scan Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results (Hidden by default) -->
+        <div class="hidden border-t border-border" id="results">
+            <!-- Content injected by JS -->
+        </div>
+
+        <!-- Loading (Hidden by default) -->
+        <div class="hidden p-8 text-center border-t border-border" id="loading">
+            <div class="inline-block animate-spin text-primary text-2xl mb-4">
+                <i class="fas fa-circle-notch"></i>
+            </div>
+            <p class="font-medium animate-pulse">Contacting VirusTotal Intelligence...</p>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+<script>
+let selectedFile = null;
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const resultsDiv = document.getElementById('results');
+const loadingDiv = document.getElementById('loading');
+
+dropZone.onclick = () => fileInput.click();
+dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('bg-muted/50'); };
+dropZone.ondragleave = () => { dropZone.classList.remove('bg-muted/50'); };
+dropZone.ondrop = e => {
+    e.preventDefault();
+    dropZone.classList.remove('bg-muted/50');
+    if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+};
+fileInput.onchange = e => { if (e.target.files.length) selectFile(e.target.files[0]); };
+
+function selectFile(file) {
+    selectedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatSize(file.size);
+    fileInfo.classList.remove('hidden');
+    dropZone.classList.add('opacity-50', 'pointer-events-none');
+}
+
+function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfo.classList.add('hidden');
+    resultsDiv.classList.add('hidden');
+    dropZone.classList.remove('opacity-50', 'pointer-events-none');
+}
+
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+async function scanFile() {
+    if (!selectedFile) return;
+    
+    loadingDiv.classList.remove('hidden');
+    resultsDiv.classList.add('hidden');
+    fileInfo.classList.add('opacity-50', 'pointer-events-none');
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    
+    try {
+        const res = await fetch('', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+        });
+        const data = await res.json();
+        loadingDiv.classList.add('hidden');
+        fileInfo.classList.remove('opacity-50', 'pointer-events-none');
+        showResults(data);
+    } catch (e) {
+        loadingDiv.classList.add('hidden');
+        fileInfo.classList.remove('opacity-50', 'pointer-events-none');
+        alert('Scan failed: ' + e.message);
+    }
+}
+
+function showResults(data) {
+    let html = '<div class="p-6">';
+    
+    if (data.error) {
+        html += `<div class="alert alert--destructive"><i class="fas fa-exclamation-triangle"></i><span>${data.error}</span></div>`;
+    } else {
+        const isMalicious = data.malicious > 0;
+        
+        html += `
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="font-semibold text-lg flex items-center gap-2">
+                <i class="fas fa-file-medical text-primary"></i> Analysis Report
+            </h3>
+            ${data.permalink ? `<a href="${data.permalink}" target="_blank" class="text-sm hover:underline text-primary">View Full Report <i class="fas fa-external-link-alt ml-1"></i></a>` : ''}
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="p-4 rounded-lg bg-secondary/50 flex flex-col items-center justify-center text-center">
+                <span class="text-sm text-muted mb-1">Detection Ratio</span>
+                <span class="text-3xl font-bold ${isMalicious ? 'text-destructive' : 'text-success'}">${data.malicious}/${data.total_engines}</span>
+            </div>
+            <div class="p-4 rounded-lg bg-secondary/50 flex flex-col items-center justify-center text-center">
+                <span class="text-sm text-muted mb-1">Status</span>
+                <span class="text-xl font-semibold uppercase ${isMalicious ? 'text-destructive' : (data.status === 'uploaded_for_analysis' ? 'text-warning' : 'text-success')}">
+                    ${isMalicious ? 'MALICIOUS' : (data.status === 'uploaded_for_analysis' ? 'QUEUED' : 'CLEAN')}
+                </span>
+            </div>
+        </div>
+
+        ${isMalicious ? `
+        <div class="alert alert--destructive mb-4">
+            <i class="fas fa-biohazard"></i>
+            <div>
+                <h4 class="font-bold">Threat Detected</h4>
+                <p class="text-sm">This file has been flagged by multiple security vendors.</p>
+            </div>
+        </div>` : ''}
+        
+        ${data.status === 'uploaded_for_analysis' ? `
+        <div class="alert alert--warning mb-4">
+            <i class="fas fa-clock"></i>
+            <div>
+                <h4 class="font-bold">In Queue</h4>
+                <p class="text-sm">File uploaded successfully. Analysis is pending on VirusTotal servers.</p>
+            </div>
+        </div>` : ''}
+
+        <div class="text-xs text-muted text-center font-mono mt-4">
+            MD5: ${data.md5 || 'N/A'} <br>
+            SHA1: ${data.sha1 || 'N/A'} <br>
+            SHA256: ${data.sha256 || 'N/A'}
+        </div>
+        `;
+    }
+    
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+    resultsDiv.classList.remove('hidden');
+}
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,73 @@
+{% extends "base_public.html" %}
+
+{% block title %}Register - VULNRIX{% endblock %}
+
+{% block content %}
+    <div style="max-width: 450px; width: 100%;">
+        <!-- Branding -->
+        <div class="flex flex-col items-center mb-6">
+            <div class="mb-4 text-primary">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight">Create an account</h1>
+            <p class="text-sm text-muted">Join VULNRIX to secure your footprint & code</p>
+        </div>
+        
+        <!-- Register Form -->
+        <div class="card bg-card border shadow-sm">
+            <form method="POST" class="flex flex-col gap-4">
+                {% csrf_token %}
+                
+                <div class="flex flex-col gap-2">
+                    <label for="id_username" class="text-sm font-medium leading-none">Username</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <p class="text-xs text-destructive">{{ form.username.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label for="id_email" class="text-sm font-medium leading-none">Email Address</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <p class="text-xs text-destructive">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label for="id_password1" class="text-sm font-medium leading-none">Password</label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}
+                    <p class="text-xs text-destructive">{{ form.password1.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-[0.8rem] text-muted-foreground">Must be at least 8 characters</p>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label for="id_password2" class="text-sm font-medium leading-none">Confirm Password</label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                    <p class="text-xs text-destructive">{{ form.password2.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert--error text-xs p-3">
+                    {% for error in form.non_field_errors %}
+                    <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <button type="submit" class="btn btn--primary w-full mt-2">
+                    Create account
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-sm text-muted">
+                Already have an account? 
+                <a href="{% url 'accounts:login' %}" class="underline underline-offset-4 hover:text-primary">Sign in</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark"> <!-- Default to dark mode for "hacker" feel but refined -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VULNRIX - Security Intelligence Platform">
+    <title>{% block title %}VULNRIX{% endblock %}</title>
+    {% load static %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    
+    <!-- Tailwind CSS (via CDN for immediate fix) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ["class", '[data-theme="dark"]'],
+            theme: {
+                container: {
+                    center: true,
+                    padding: "2rem",
+                    screens: {
+                        "2xl": "1400px",
+                    },
+                },
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                    keyframes: {
+                        "accordion-down": {
+                            from: { height: 0 },
+                            to: { height: "var(--radix-accordion-content-height)" },
+                        },
+                        "accordion-up": {
+                            from: { height: "var(--radix-accordion-content-height)" },
+                            to: { height: 0 },
+                        },
+                    },
+                    animation: {
+                        "accordion-down": "accordion-down 0.2s ease-out",
+                        "accordion-up": "accordion-up 0.2s ease-out",
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Custom Overrides -->
+    <link rel="stylesheet" href="{% static 'css/vulnrix.css' %}">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Charts.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<div class="app-layout">
+    <!-- Mobile Header -->
+    <header class="topbar">
+        <button id="sidebarToggle" class="btn btn--outline btn--sm"><i class="fas fa-bars"></i></button>
+        <span class="font-semibold text-lg">VULNRIX</span>
+        <button class="btn btn--sm btn--outline"><i class="fas fa-user"></i></button>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <a href="{% url 'scanner:dashboard' %}" class="sidebar-brand">
+            <img src="{% static 'favicon.svg' %}" alt="VULNRIX" class="w-7 h-7">
+            <span style="color: #00d4d4;">VULNRIX</span>
+        </a>
+        
+        <div class="flex-col gap-4">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Platform</div>
+                <a href="{% url 'scanner:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-home w-4"></i> Dashboard
+                </a>
+                <a href="{% url 'scanner:docs' %}" class="sidebar-link {% if 'docs' in request.path %}active{% endif %}">
+                    <i class="fas fa-book w-4"></i> Documentation
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Intelligence</div>
+                <a href="{% url 'scanner:new_scan' %}" class="sidebar-link {% if 'scan/new' in request.path %}active{% endif %}">
+                    <i class="fas fa-search w-4"></i> New OSINT Scan
+                </a>
+                <a href="{% url 'scanner:dashboard' %}#history" class="sidebar-link">
+                    <i class="fas fa-history w-4"></i> Scan History
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title flex justify-between items-center">
+                    <span>Dev Tools</span>
+                    <span class="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-mono">&lt;/&gt;</span>
+                </div>
+                <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-link {% if 'vuln' in request.path %}active{% endif %}">
+                    <i class="fas fa-code w-4"></i> Code & File Scanner
+                </a>
+                <a href="{% url 'vuln_scan:virustotal' %}" class="sidebar-link">
+                    <i class="fas fa-virus w-4"></i> VirusTotal Engine
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Settings</div>
+
+                <a href="{% url 'accounts:logout' %}" class="sidebar-link text-destructive">
+                    <i class="fas fa-sign-out-alt w-4"></i> Logout
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Wrapper (App) -->
+    <main class="main-content">
+        {% if messages %}
+        <div class="mb-6 w-full max-w-4xl mx-auto">
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert--error{% else %}alert--success{% endif %}">
+                <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                <div class="text-sm">{{ message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+
+        {% block footer %}
+        <footer class="mt-auto py-6 border-t border-border/30 text-center">
+            <p class="text-sm text-muted-foreground mb-2">Digital Security, Our Priority</p>
+            <div class="flex items-center justify-center gap-3 text-xs text-muted-foreground/70">
+                <span>&copy; {% now "Y" %} VULNRIX</span>
+                <span>•</span>
+                <a href="https://github.com/HOLYKEYZ/VULNRIX" target="_blank" class="hover:text-primary transition-colors inline-flex items-center gap-1">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+            </div>
+        </footer>
+        {% endblock %}
+    </main>
+</div>
+
+<!-- JS Utilities -->
+<script src="{% static 'js/vulnrix-utils.js' %}"></script>
+<script>
+    // Simple sidebar toggle for mobile
+    document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('open');
+    });
+</script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
+

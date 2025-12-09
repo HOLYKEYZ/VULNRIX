@@ -1,0 +1,577 @@
+/*
+ * VULNRIX Design System
+ * Inspired by shadcn/ui - Clean, Modern, Professional.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ========================================
+   CSS Variables (Design Tokens - Zinc Scale)
+   ======================================== */
+:root {
+    /* Colors - Light Mode (Default Zinc) */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    
+    --radius: 0.5rem;
+    
+    /* VULNRIX Specific Brand Colors */
+    --brand-primary: #00d4d4; /* Keep the teal as a specific brand accent */
+    --brand-primary-foreground: #000000;
+}
+
+/* Dark Mode (Zinc) */
+[data-theme="dark"] {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    /* Primary changed to green for SafeGrey-like aesthetic */
+    --primary: 160 84% 39%;  /* #10b981 */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    /* Success color - green accent */
+    --success: 160 84% 39%;  /* #10b981 */
+    --success-foreground: 0 0% 100%;
+    
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 160 84% 39%;  /* Green ring for focus states */
+}
+
+/* ========================================
+   Base & Typography
+   ======================================== */
+* {
+    box-sizing: border-box;
+    border-color: hsl(var(--border));
+}
+
+html {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    min-height: 100%;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.025em; /* Tight tracking for headings */
+    margin: 0 0 1rem;
+}
+
+h1 { font-size: 2.25rem; font-weight: 700; }
+h2 { font-size: 1.875rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+
+p { margin-top: 0; margin-bottom: 1rem; line-height: 1.6; }
+
+code, pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+}
+
+/* Utility Classes for Typography */
+.text-muted { color: hsl(var(--muted-foreground)); }
+.text-primary { color: var(--brand-primary); } 
+.font-semibold { font-weight: 600; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.uppercase { text-transform: uppercase; }
+.tracking-wider { letter-spacing: 0.05em; }
+
+/* ========================================
+   Layout Components
+   ======================================== */
+.container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 1400px;
+}
+
+.grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }
+.w-full { width: 100%; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+
+/* ========================================
+   Components
+   ======================================== */
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    padding: 0 1rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: colors 0.15s ease-in-out;
+    cursor: pointer;
+    border: 1px solid transparent; /* default */
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn--primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 0 15px hsla(var(--primary), 0.3);
+    transition: all 0.2s ease-in-out;
+}
+.btn--primary:hover {
+    opacity: 0.95;
+    box-shadow: 0 0 25px hsla(var(--primary), 0.5);
+    transform: translateY(-1px);
+}
+
+.btn--secondary {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border: 1px solid transparent;
+}
+.btn--secondary:hover { background-color: hsl(var(--secondary) / 0.8); }
+
+.btn--outline {
+    background-color: transparent;
+    border: 1px solid hsl(var(--input));
+    color: hsl(var(--foreground));
+}
+.btn--outline:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+}
+
+.btn--danger {
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+}
+.btn--danger:hover { opacity: 0.9; }
+
+.btn--sm { height: 2rem; padding: 0 0.75rem; font-size: 0.75rem; }
+.btn--lg { height: 3rem; padding: 0 2rem; font-size: 1rem; }
+
+/* Cards */
+.card {
+    border-radius: var(--radius); /* 0.5rem normally, shadcn uses 0.5 for small, XL for larger */
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* very subtle shadow */
+    padding: 1.5rem;
+}
+
+/* Inputs */
+.form-input, input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    display: flex;
+    height: 2.5rem;
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--input));
+    background-color: transparent;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    transition: box-shadow 0.1s;
+}
+
+.form-input:focus, input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 1px hsl(var(--ring));
+}
+
+.form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: none;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.form-group { margin-bottom: 1.25rem; }
+
+.form-error { color: hsl(var(--destructive)); font-size: 0.8rem; margin-top: 0.25rem; }
+.form-hint { color: hsl(var(--muted-foreground)); font-size: 0.8rem; margin-top: 0.25rem; }
+
+/* Tables */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+th {
+    height: 2.5rem;
+    padding: 0 1rem;
+    text-align: left;
+    vertical-align: middle;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    border-bottom: 1px solid hsl(var(--border));
+    background-color: hsl(var(--muted) / 0.5);
+}
+
+td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid hsl(var(--border));
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover { background-color: hsl(var(--muted) / 0.5); }
+
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px; /* Pill shape */
+    border: 1px solid transparent;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: colors 0.15s;
+}
+
+.badge--outline { border-color: hsl(var(--border)); color: hsl(var(--foreground)); }
+.badge--secondary { background-color: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); }
+.badge--primary { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.badge--danger { background-color: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+
+/* Custom Colors for Risks */
+.badge--risk-low { border-color: transparent; background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge--risk-med { border-color: transparent; background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.badge--risk-high { border-color: transparent; background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+/* Alerts */
+.alert {
+    position: relative;
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.alert--error {
+    border-color: hsl(var(--destructive) / 0.5);
+    color: hsl(var(--destructive));
+}
+
+.alert--success {
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #10b981;
+}
+
+/* ========================================
+   Sidebar & Navigation (Clean)
+   ======================================== */
+.app-layout { display: flex; min-height: 100vh; background: hsl(var(--background)); }
+
+.sidebar {
+    width: 250px;
+    background: hsl(var(--card));
+    border-right: 1px solid hsl(var(--border));
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem 2rem 1rem;
+    position: fixed;
+    height: 100vh;
+    z-index: 50;
+    overflow-y: auto;
+}
+
+.sidebar-brand {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
+    text-decoration: none;
+}
+
+.sidebar-section { margin-bottom: 1.5rem; }
+
+.sidebar-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 0.5rem;
+    padding: 0 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: all 0.15s;
+    font-weight: 500;
+}
+
+.sidebar-link:hover {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--accent));
+}
+
+.sidebar-link.active {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--accent));
+    font-weight: 600;
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 2rem;
+    width: calc(100% - 250px);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Topbar for Mobile */
+.topbar { display: none; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .sidebar { 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease-in-out;
+        position: fixed;
+        z-index: 100;
+    }
+    .sidebar.open { 
+        transform: translateX(0); 
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    }
+    .main-content { 
+        margin-left: 0; 
+        width: 100%; 
+        padding: 1rem;
+        padding-top: 4.5rem;
+    }
+    
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1rem;
+        height: 3.5rem;
+        border-bottom: 1px solid hsl(var(--border));
+        background: hsl(var(--background));
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 40;
+    }
+    
+    /* Cards stack on mobile */
+    .grid { gap: 1rem; }
+    .card { padding: 1rem; }
+    
+    /* Table horizontal scroll */
+    .overflow-x-auto { 
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Smaller text on mobile */
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1rem; }
+    
+    /* Footer centered and compact */
+    footer { padding: 1rem; }
+    footer .flex { flex-direction: column; gap: 0.5rem; }
+    
+    /* Form inputs full width */
+    .btn { width: 100%; justify-content: center; }
+    .btn--sm { width: auto; }
+    
+    /* Hide chart overflow */
+    canvas { max-width: 100%; }
+}
+
+/* Small phone styles */
+@media (max-width: 480px) {
+    .main-content { padding: 0.75rem; padding-top: 4rem; }
+    .card { padding: 0.75rem; }
+    h1 { font-size: 1.25rem; }
+    .text-3xl { font-size: 1.5rem; }
+    .text-2xl { font-size: 1.25rem; }
+    
+    /* Table cells smaller */
+    td, th { padding: 0.5rem; font-size: 0.75rem; }
+    
+    /* Scan results page - risk circle */
+    .w-48 { width: 8rem; height: 8rem; }
+    
+    /* Stack buttons vertically */
+    .flex.gap-2 { flex-direction: column; }
+    .flex.gap-3 { flex-direction: column; }
+    
+    /* Break long text */
+    .font-mono { word-break: break-all; }
+    
+    /* Grid single column on very small screens */
+    .grid-cols-2 { grid-template-columns: 1fr; }
+    .lg\:grid-cols-3, .md\:grid-cols-2 { grid-template-columns: 1fr; }
+}
+
+/* ========================================
+   Command Palette (Ctrl+K)
+   ======================================== */
+.command-palette-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 15vh;
+}
+
+.command-palette-overlay.active {
+    display: flex;
+}
+
+.command-palette {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.command-palette__input {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-bottom: 1px solid hsl(var(--border));
+    background: transparent;
+    color: hsl(var(--foreground));
+    font-size: 1rem;
+    outline: none;
+}
+
+.command-palette__input::placeholder {
+    color: hsl(var(--muted-foreground));
+}
+
+.command-palette__results {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.command-palette__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    color: hsl(var(--muted-foreground));
+}
+
+.command-palette__item:hover,
+.command-palette__item.selected {
+    background: hsl(var(--accent));
+    color: hsl(var(--foreground));
+}
+
+.command-palette__item i {
+    width: 1.25rem;
+    text-align: center;
+}

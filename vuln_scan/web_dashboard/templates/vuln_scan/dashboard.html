@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Code & File Scanner - VULNRIX{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-7xl pb-10">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-3 bg-primary/10 rounded-lg text-primary">
+                    <i class="fas fa-file-code text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight">Code Scanner</h1>
+                    <p class="text-muted">Static Analysis & Vulnerability Detection</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scan Mode Selector -->
+        <div class="flex bg-muted p-1 rounded-lg" role="group" aria-label="Scan mode selection">
+            <button class="px-4 py-2 text-sm font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground hover:text-foreground" 
+                onclick="setMode('fast')" id="btn-fast" data-state="inactive">
+                <i class="fas fa-bolt mr-2"></i> Fast
+            </button>
+            <button class="px-4 py-2 text-sm font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground hover:text-foreground" 
+                onclick="setMode('hybrid')" id="btn-hybrid" data-state="active">
+                <i class="fas fa-balance-scale mr-2"></i> Hybrid
+            </button>
+            <button class="px-4 py-2 text-sm font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground hover:text-foreground" 
+                onclick="setMode('deep')" id="btn-deep" data-state="inactive">
+                <i class="fas fa-brain mr-2"></i> Deep AI
+            </button>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="card p-4">
+            <p class="text-xs text-muted uppercase tracking-wider mb-1">System Status</p>
+            <div class="flex items-center gap-2 text-success font-medium">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                </span>
+                Online
+            </div>
+        </div>
+        <div class="card p-4">
+            <p class="text-xs text-muted uppercase tracking-wider mb-1">Scan Mode</p>
+            <div class="font-bold text-lg" id="currentMode">Hybrid</div>
+        </div>
+        <div class="card p-4">
+            <p class="text-xs text-muted uppercase tracking-wider mb-1">Last Scan</p>
+            <div class="font-mono text-lg" id="lastScan">{% if last_scan %}{{ last_scan.created_at|date:"H:i" }}{% else %}--:--{% endif %}</div>
+        </div>
+        <div class="card p-4">
+            <p class="text-xs text-muted uppercase tracking-wider mb-1">Issues Found</p>
+            <div class="font-bold text-lg text-primary" id="issuesCount">{% if last_scan %}{{ last_scan.total_findings }}{% else %}0{% endif %}</div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Scanner Area -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Upload Zone -->
+            <div class="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-10 text-center cursor-pointer bg-muted/20 group relative overflow-hidden" 
+                 id="dropZone" role="button" tabindex="0">
+                <input type="file" id="fileInput" class="hidden" accept=".py,.js,.ts,.jsx,.tsx,.java,.go,.php,.rb,.c,.cpp,.h,.hpp,.cs,.swift,.kt,.rs,.sql,.sh,.yaml,.yml,.json,.xml,.html,.vue">
+                
+                <div class="pointer-events-none relative z-10">
+                    <div class="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-cloud-upload-alt text-2xl text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Drop Source Code Here</h3>
+                    <p class="text-muted mb-6">or click to browse files</p>
+                    
+                    <div class="flex flex-wrap justify-center gap-2 max-w-md mx-auto">
+                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.py</span>
+                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.js</span>
+                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.go</span>
+                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.rs</span>
+                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.c</span>
+                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">+20 more</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selected File & Actions -->
+            <div id="fileInfo" class="hidden animate-in fade-in slide-in-from-top-2">
+                <div class="card flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
+                    <div class="flex items-center gap-4 w-full sm:w-auto">
+                        <div class="w-12 h-12 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <i class="fas fa-file-code text-xl"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div id="selectedFileName" class="font-semibold truncate">filename.py</div>
+                            <div id="selectedFileSize" class="text-sm text-muted">0 KB</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button class="btn btn--ghost flex-1 sm:flex-none" onclick="clearFile()">Cancel</button>
+                        <button class="btn btn--primary flex-1 sm:flex-none" id="scanBtn" onclick="startScan()">
+                            <i class="fas fa-search mr-2"></i> Start Scan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Output -->
+            <div id="resultsArea" class="hidden space-y-6">
+                <div class="rounded-lg border border-border bg-[#0d1117] font-mono text-sm overflow-hidden shadow-2xl">
+                    <div class="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5">
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                        </div>
+                        <div class="text-xs text-gray-400">vulnrix-cli v2.0</div>
+                        <div id="scanTime" class="text-xs text-green-400"></div>
+                    </div>
+                    <div class="p-4 space-y-1 text-gray-300 max-h-[300px] overflow-y-auto custom-scrollbar" id="terminalOutput">
+                        <!-- Logs go here -->
+                    </div>
+                </div>
+
+                <!-- Detailed Findings -->
+                <div id="findingsContainer" class="space-y-4">
+                    <!-- Cards injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar: History -->
+        <div class="lg:col-span-1">
+            {% if scan_history %}
+            <div class="card h-fit sticky top-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold flex items-center gap-2">
+                        <i class="fas fa-history text-muted"></i> Recent Scans
+                    </h3>
+                </div>
+                <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    {% for scan in scan_history %}
+                    <div onclick="loadScanResult({{ scan.id }})" 
+                         class="group p-3 rounded-lg border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-code text-xs text-muted"></i>
+                                <span class="font-medium text-sm truncate max-w-[120px]">{{ scan.filename }}</span>
+                            </div>
+                            <span class="badge text-[10px] px-1.5 py-0.5 
+                                {% if scan.status == 'SAFE' %}bg-green-500/10 text-green-500
+                                {% elif scan.status == 'VULNERABLE' %}bg-red-500/10 text-red-500
+                                {% else %}bg-yellow-500/10 text-yellow-500{% endif %}">
+                                {{ scan.status }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-muted">
+                            <span>{{ scan.created_at|date:"M d, H:i" }}</span>
+                            <span>{{ scan.total_findings }} issues</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Full Screen Loading Overlay -->
+<div id="loadingOverlay" class="fixed inset-0 bg-background/95 z-[9999] hidden flex-col items-center justify-center p-4">
+    <div class="relative w-28 h-28 mb-6">
+        <!-- Outer spinning ring -->
+        <div class="absolute inset-0 border-t-2 border-r-2 border-primary rounded-full animate-spin"></div>
+        <!-- Inner reverse spinning ring -->
+        <div class="absolute inset-3 border-b-2 border-l-2 border-primary/50 rounded-full animate-spin reverse-spin"></div>
+        <!-- VULNRIX Logo in center -->
+        <div class="absolute inset-0 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 animate-pulse">
+                <path d="M12 2L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 2Z" fill="#0a0a0f" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary"/>
+                <path d="M12 7L8 9V12C8 14.5 9.5 16.8 12 17.5C14.5 16.8 16 14.5 16 12V9L12 7Z" fill="currentColor" fill-opacity="0.3" stroke="currentColor" stroke-width="1" class="text-primary"/>
+            </svg>
+        </div>
+    </div>
+    <h2 class="text-xl font-bold mb-2">Running Security Analysis</h2>
+    <p class="text-muted animate-pulse" id="loadingText">Initializing engine...</p>
+</div>
+
+
+{% csrf_token %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// State
+let currentMode = 'hybrid';
+let selectedFile = null;
+
+// DOM Elements
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const loadingText = document.getElementById('loadingText');
+const resultsArea = document.getElementById('resultsArea');
+const terminalOutput = document.getElementById('terminalOutput');
+const findingsContainer = document.getElementById('findingsContainer');
+const currentModeDisplay = document.getElementById('currentMode');
+
+// Mode Selection
+window.setMode = function(mode) {
+    currentMode = mode;
+    document.querySelectorAll('[role="group"] button').forEach(btn => {
+        btn.dataset.state = 'inactive';
+        btn.classList.remove('bg-primary', 'text-primary-foreground');
+        btn.classList.add('bg-background');
+    });
+    const activeBtn = document.getElementById('btn-' + mode);
+    activeBtn.dataset.state = 'active';
+    activeBtn.classList.remove('bg-background');
+    activeBtn.classList.add('bg-primary', 'text-primary-foreground');
+    currentModeDisplay.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+};
+
+// Utilities
+const formatFileSize = bytes => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+const escapeHtml = text => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+};
+
+// File Handling
+const selectFile = file => {
+    selectedFile = file;
+    document.getElementById('selectedFileName').textContent = file.name;
+    document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
+    fileInfo.classList.remove('hidden');
+    dropZone.classList.add('hidden');
+};
+
+window.clearFile = () => {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfo.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    resultsArea.classList.add('hidden');
+};
+
+dropZone.onclick = () => fileInput.click();
+dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); };
+dropZone.ondragleave = () => { dropZone.classList.remove('border-primary', 'bg-primary/5'); };
+dropZone.ondrop = e => {
+    e.preventDefault();
+    dropZone.classList.remove('border-primary', 'bg-primary/5');
+    if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+};
+fileInput.onchange = e => { if (e.target.files.length) selectFile(e.target.files[0]); };
+
+// Scan Logic
+window.startScan = async () => {
+    if (!selectedFile) return alert('Please select a file');
+    
+    // UI Prep
+    loadingOverlay.classList.remove('hidden');
+    loadingOverlay.classList.add('flex');
+    loadingText.textContent = `Reading ${selectedFile.name}...`;
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('mode', currentMode);
+    
+    try {
+        loadingText.textContent = `Running ${currentMode} analysis engines...`;
+        
+        const res = await fetch('', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+        });
+        
+        const data = await res.json();
+        
+        loadingText.textContent = 'Generating report...';
+        setTimeout(() => {
+            loadingOverlay.classList.add('hidden');
+            loadingOverlay.classList.remove('flex');
+            renderResults(data, selectedFile.name);
+            // Update last scan time
+            const now = new Date();
+            document.getElementById('lastScan').textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }, 500);
+        
+    } catch (e) {
+        loadingOverlay.classList.add('hidden');
+        loadingOverlay.classList.remove('flex');
+        alert('Scan Error: ' + e.message);
+    }
+};
+
+// Rendering
+function renderResults(data, filename) {
+    resultsArea.classList.remove('hidden');
+    
+    // Update Stats
+    const totalFindings = (data.findings ? data.findings.length : 0) + (data.semantic_hints ? data.semantic_hints.length : 0);
+    document.getElementById('issuesCount').textContent = totalFindings;
+
+    // Terminal Output
+    const statusColor = data.status === 'SAFE' ? 'text-green-400' : 'text-red-400';
+    let logs = `
+        <div class="flex gap-2"><span class="text-blue-500">➜</span> <span>TARGET: ${escapeHtml(filename)}</span></div>
+        <div class="flex gap-2"><span class="text-blue-500">➜</span> <span>MODE: ${currentMode.toUpperCase()}</span></div>
+        <div class="flex gap-2"><span class="text-blue-500">➜</span> <span class="${statusColor}">STATUS: ${data.status || 'COMPLETE'}</span></div>
+    `;
+    
+    if(data.risk_score) logs += `<div class="flex gap-2"><span class="text-blue-500">➜</span> <span>RISK_SCORE: ${data.risk_score}</span></div>`;
+    
+    if (data.virustotal && data.virustotal.source === 'virustotal_api') {
+        const vt = data.virustotal;
+        const vtColor = vt.malicious > 0 ? 'text-red-400' : 'text-green-400';
+        logs += `<div class="flex gap-2"><span class="text-blue-500">➜</span> <span class="${vtColor}">VIRUSTOTAL: ${vt.malicious}/${vt.total_engines} engines detected malware</span></div>`;
+    }
+
+    if (data.error) logs += `<div class="flex gap-2"><span class="text-red-500">✖</span> <span class="text-red-400">ERROR: ${escapeHtml(data.error)}</span></div>`;
+
+    terminalOutput.innerHTML = logs;
+
+    // Findings Cards
+    let html = '';
+    
+    // 1. VirusTotal Card
+    if (data.virustotal && data.virustotal.source === 'virustotal_api') {
+        const vt = data.virustotal;
+        const isMalicious = vt.malicious > 0;
+        
+        html += `
+        <div class="card p-0 overflow-hidden border-${isMalicious ? 'destructive' : 'success'}/50">
+            <div class="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
+                <h3 class="font-semibold flex items-center gap-2">
+                    <i class="fas fa-shield-virus ${isMalicious ? 'text-destructive' : 'text-success'}"></i> VirusTotal Analysis
+                </h3>
+                <span class="badge ${isMalicious ? 'badge--destructive' : 'badge--outline'}">
+                    ${vt.malicious}/${vt.total_engines} Detections
+                </span>
+            </div>
+            <div class="p-4">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="text-sm font-mono bg-muted p-2 rounded flex-1 truncate">
+                        SHA256: ${vt.file_hash || 'N/A'}
+                    </div>
+                </div>
+                ${vt.permalink ? `<a href="${vt.permalink}" target="_blank" class="text-sm text-primary hover:underline"><i class="fas fa-external-link-alt mr-1"></i> View Full Report</a>` : ''}
+        </div>`;
+    }
+
+    // 2. AI Malicious Code Detection Card
+    if (data.ai_malicious_risk) {
+        const ai = data.ai_malicious_risk;
+        const riskColors = {
+            'CRITICAL': 'text-red-500 bg-red-500/10 border-red-500',
+            'HIGH': 'text-orange-500 bg-orange-500/10 border-orange-500',
+            'MEDIUM': 'text-yellow-500 bg-yellow-500/10 border-yellow-500',
+            'LOW': 'text-blue-500 bg-blue-500/10 border-blue-500',
+            'SAFE': 'text-green-500 bg-green-500/10 border-green-500'
+        };
+        const riskClass = riskColors[ai.risk_level] || riskColors['MEDIUM'];
+        const isRisky = ai.risk_level !== 'SAFE';
+        
+        html += `
+        <div class="card p-0 overflow-hidden border-${isRisky ? 'destructive' : 'success'}/50 mt-4">
+            <details class="group">
+                <summary class="p-4 border-b border-border bg-muted/30 flex justify-between items-center cursor-pointer list-none hover:bg-muted/50 transition-colors">
+                    <h3 class="font-semibold flex items-center gap-2">
+                        <i class="fas fa-robot ${isRisky ? 'text-destructive' : 'text-success'}"></i> 
+                        AI-Generated Malicious Code Risk
+                        <i class="fas fa-chevron-down text-xs text-muted group-open:rotate-180 transition-transform"></i>
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="badge ${riskClass}">${ai.risk_level}</span>
+                        <span class="text-sm text-muted">Score: ${ai.risk_score}/100</span>
+                    </div>
+                </summary>
+                <div class="p-4">
+                    <!-- Flags -->
+                    ${ai.flags && ai.flags.length > 0 ? `
+                    <div class="mb-4">
+                        <h4 class="text-sm font-semibold text-muted mb-2">Detection Flags</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${ai.flags.map(flag => `<span class="badge bg-destructive/10 text-destructive text-xs">${escapeHtml(flag)}</span>`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Summary -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div class="bg-muted/50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold ${ai.summary && ai.summary.ai_style ? 'text-yellow-500' : 'text-muted'}">${ai.summary && ai.summary.ai_style ? '⚠' : '✓'}</div>
+                            <div class="text-xs text-muted">AI Style</div>
+                        </div>
+                        <div class="bg-muted/50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold ${ai.summary && ai.summary.malicious_templates ? 'text-red-500' : 'text-muted'}">${ai.summary && ai.summary.malicious_templates ? '⚠' : '✓'}</div>
+                            <div class="text-xs text-muted">Malicious Template</div>
+                        </div>
+                        <div class="bg-muted/50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold ${ai.summary && ai.summary.obfuscation ? 'text-orange-500' : 'text-muted'}">${ai.summary && ai.summary.obfuscation ? '⚠' : '✓'}</div>
+                            <div class="text-xs text-muted">Obfuscation</div>
+                        </div>
+                        <div class="bg-muted/50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold ${ai.summary && ai.summary.hallucinations ? 'text-purple-500' : 'text-muted'}">${ai.summary && ai.summary.hallucinations ? '⚠' : '✓'}</div>
+                            <div class="text-xs text-muted">Hallucinations</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Findings -->
+                    ${ai.total_findings > 0 ? `
+                    <details class="mt-4">
+                        <summary class="text-sm font-semibold text-muted cursor-pointer hover:text-foreground">
+                            View ${ai.total_findings} Finding(s) <i class="fas fa-chevron-right text-xs"></i>
+                        </summary>
+                        <div class="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                            ${(ai.findings || []).slice(0, 15).map(f => {
+                                const sevColor = f.severity === 'high' ? 'border-l-red-500 bg-red-500/5' : 
+                                               (f.severity === 'medium' ? 'border-l-yellow-500 bg-yellow-500/5' : 'border-l-blue-500 bg-blue-500/5');
+                                return `
+                                <div class="border-l-2 ${sevColor} p-2 rounded-r text-sm">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium">${escapeHtml(f.type || 'Detection')}</span>
+                                        ${f.line ? `<span class="text-xs text-muted">Line ${f.line}</span>` : ''}
+                                    </div>
+                                    ${f.evidence ? `<code class="text-xs text-muted block mt-1 truncate">${escapeHtml(String(f.evidence).substring(0, 80))}...</code>` : ''}
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </details>
+                    ` : '<p class="text-sm text-muted text-center py-4">No AI-generated malicious patterns detected.</p>'}
+                </div>
+            </details>
+        </div>`;
+    }
+
+    // 2. Code Findings
+    const allFindings = [...(data.findings || []), ...(data.semantic_hints || [])];
+    
+    if (allFindings.length > 0) {
+        html += `<h3 class="text-lg font-semibold mt-8 mb-4">Detailed Findings</h3><div class="grid gap-4">`;
+        
+        allFindings.forEach(f => {
+            const severity = (f.severity || 'medium').toLowerCase();
+            const severityColors = {
+                high: 'border-l-4 border-l-red-500',
+                medium: 'border-l-4 border-l-yellow-500',
+                low: 'border-l-4 border-l-blue-500'
+            };
+            const borderClass = severityColors[severity] || severityColors.medium;
+            
+            html += `
+            <div class="card p-0 ${borderClass}">
+                <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-semibold text-foreground">${escapeHtml(f.type || 'Security Issue')}</h4>
+                            <span class="text-xs text-muted font-mono">${escapeHtml(f.cwe || '')}</span>
+                        </div>
+                        <span class="badge uppercase text-xs ${severity === 'high' ? 'bg-red-500/10 text-red-500' : (severity === 'medium' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-blue-500/10 text-blue-500')}">
+                            ${escapeHtml(severity)}
+                        </span>
+                    </div>
+                    
+                    ${f.location && f.location.line ? `<div class="text-sm text-muted mb-2"><i class="fas fa-map-marker-alt mr-1"></i> Line ${f.location.line}</div>` : ''}
+                    
+                    ${f.location && f.location.code ? `<div class="bg-muted/50 p-3 rounded-md font-mono text-xs overflow-x-auto my-3 border border-border">${escapeHtml(f.location.code)}</div>` : ''}
+                    
+                    <p class="text-sm text-muted-foreground mb-3">${escapeHtml(f.reason || '')}</p>
+                    
+                    ${f.recommendation ? `
+                    <div class="bg-primary/5 p-3 rounded text-sm text-primary-foreground/80 flex gap-2">
+                        <i class="fas fa-lightbulb mt-0.5 text-primary"></i>
+                        <span>${escapeHtml(f.recommendation)}</span>
+                    </div>` : ''}
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+    } else if (data.status === 'SAFE') {
+        html += `
+        <div class="text-center p-12 card border-dashed">
+            <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check text-2xl text-green-500"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-green-500 mb-2">No Vulnerabilities Found</h3>
+            <p class="text-muted">Your code passed all checks.</p>
+        </div>`;
+    }
+
+    findingsContainer.innerHTML = html;
+    resultsArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Load scan result from history
+function loadScanResult(scanId) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch(`/vuln/history/${scanId}/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.result) {
+            renderResults(data.result, data.filename || 'Historical Scan');
+        } else {
+            Toast.error('Could not load scan result');
+        }
+    })
+    .catch(err => {
+        console.error('Load scan error:', err);
+        Toast.error('Failed to load scan');
+    });
+}
+
+// Auto-Load (Last Scan)
+{% if last_scan and last_result %}
+document.addEventListener('DOMContentLoaded', () => {
+    const lastResult = {{ last_result|safe }};
+    if (lastResult && Object.keys(lastResult).length > 0) {
+        renderResults(lastResult, '{{ last_scan.filename|escapejs }}');
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

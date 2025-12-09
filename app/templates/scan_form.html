@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}New Scan - VULNRIX{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-4xl pb-10">
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center p-4 rounded-full bg-primary/10 mb-4 animate-[pulse-glow_3s_infinite]">
+            <i class="fas fa-radar text-4xl text-primary"></i>
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight mb-2">New OSINT Scan</h1>
+        <p class="text-muted max-w-xl mx-auto">Enter target identity or infrastructure details. Our engines will correlate data across multiple sources to build a digital footprint profile.</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card p-0 overflow-hidden">
+        <!-- Tabs -->
+        <div class="flex border-b border-border bg-muted/30">
+            <button type="button" id="tab-comprehensive" onclick="switchTab('comprehensive')" class="flex-1 py-4 text-sm font-medium border-b-2 border-primary text-primary bg-background">
+                <i class="fas fa-search-plus mr-2"></i> Comprehensive Scan
+            </button>
+            <button type="button" id="tab-quick" onclick="switchTab('quick')" class="flex-1 py-4 text-sm font-medium border-b-2 border-transparent text-muted hover:text-foreground hover:bg-muted/50 transition-colors">
+                <i class="fas fa-bolt mr-2"></i> Quick Lookup
+            </button>
+        </div>
+
+        <!-- Quick Lookup Panel (hidden by default) -->
+        <div id="quick-lookup-panel" class="p-8 hidden">
+            <div class="text-center mb-6">
+                <i class="fas fa-search text-3xl text-primary mb-3"></i>
+                <h3 class="text-lg font-semibold">Single-Field Quick Lookup</h3>
+                <p class="text-sm text-muted">Select one scan type and enter the value</p>
+            </div>
+            
+            <form method="POST" id="quick-scan-form">
+                {% csrf_token %}
+                <input type="hidden" name="scan_mode" value="quick">
+                
+                <!-- Radio buttons for scan type -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
+                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
+                        <input type="radio" name="quick_type" value="email" class="hidden" required>
+                        <i class="fas fa-envelope text-2xl mb-2 text-blue-500"></i>
+                        <span class="text-xs font-medium">Email</span>
+                    </label>
+                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
+                        <input type="radio" name="quick_type" value="username" class="hidden">
+                        <i class="fas fa-user text-2xl mb-2 text-purple-500"></i>
+                        <span class="text-xs font-medium">Username</span>
+                    </label>
+                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
+                        <input type="radio" name="quick_type" value="phone" class="hidden">
+                        <i class="fas fa-phone text-2xl mb-2 text-green-500"></i>
+                        <span class="text-xs font-medium">Phone</span>
+                    </label>
+                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
+                        <input type="radio" name="quick_type" value="domain" class="hidden">
+                        <i class="fas fa-globe text-2xl mb-2 text-orange-500"></i>
+                        <span class="text-xs font-medium">Domain</span>
+                    </label>
+                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
+                        <input type="radio" name="quick_type" value="ip" class="hidden">
+                        <i class="fas fa-network-wired text-2xl mb-2 text-red-500"></i>
+                        <span class="text-xs font-medium">IP Address</span>
+                    </label>
+                </div>
+                
+                <!-- Single input field -->
+                <div class="space-y-2 mb-6">
+                    <label class="text-sm font-medium leading-none">Enter Value</label>
+                    <input type="text" name="quick_value" id="quick-value-input" class="form-input w-full text-lg" placeholder="Enter the value to scan..." required>
+                </div>
+                
+                <div class="flex justify-center">
+                    <button type="submit" class="btn btn--primary px-8">
+                        <i class="fas fa-bolt mr-2"></i> Quick Scan
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Comprehensive Scan Panel -->
+        <div id="comprehensive-panel" class="p-8">
+            <form method="POST" id="scan-form">
+                {% csrf_token %}
+                
+                <!-- Section 1: Identity -->
+                <div class="mb-8">
+                    <h3 class="flex items-center text-lg font-semibold mb-4 text-foreground">
+                        <span class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary text-sm mr-3">1</span>
+                        Identity Information
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none">Full Name</label>
+                            <input type="text" name="name" class="form-input w-full" placeholder="e.g. John Doe">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none">Email Address</label>
+                            <input type="email" name="email" class="form-input w-full" placeholder="e.g. john.doe@entity.com">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none">Username</label>
+                            <input type="text" name="username" class="form-input w-full" placeholder="e.g. jdoe1999">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none">Phone Number</label>
+                            <input type="tel" name="phone" class="form-input w-full" placeholder="e.g. +1 555 0199">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-px bg-border my-8"></div>
+
+                <!-- Section 2: Infrastructure -->
+                <div class="mb-8">
+                    <h3 class="flex items-center text-lg font-semibold mb-4 text-foreground">
+                        <span class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary text-sm mr-3">2</span>
+                        Infrastructure
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none">Domain Name</label>
+                            <input type="text" name="domain" class="form-input w-full" placeholder="e.g. entity.com">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium leading-none">IP Address</label>
+                            <input type="text" name="ip" class="form-input w-full" placeholder="e.g. 192.168.1.50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-px bg-border my-8"></div>
+
+                <!-- Section 3: Platforms -->
+                <div class="mb-8">
+                    <h3 class="flex items-center text-lg font-semibold mb-4 text-foreground">
+                        <span class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary text-sm mr-3">3</span>
+                        Social Platforms
+                    </h3>
+                    
+                    <!-- Search Filter -->
+                    <div class="relative mb-4">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm"></i>
+                        <input type="text" id="platform-search" class="form-input w-full pl-9" placeholder="Search platforms..." oninput="filterPlatforms(this.value)">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="platforms-grid">
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="instagram">
+                            <input type="checkbox" name="social_platforms" value="instagram" class="hidden">
+                            <i class="fab fa-instagram text-2xl mb-1" style="color: #E4405F;"></i>
+                            <span class="text-xs font-medium">Instagram</span>
+                        </label>
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="facebook">
+                            <input type="checkbox" name="social_platforms" value="facebook" class="hidden">
+                            <i class="fab fa-facebook text-2xl mb-1" style="color: #1877F2;"></i>
+                            <span class="text-xs font-medium">Facebook</span>
+                        </label>
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="twitter">
+                            <input type="checkbox" name="social_platforms" value="twitter" class="hidden">
+                            <i class="fab fa-twitter text-2xl mb-1" style="color: #1DA1F2;"></i>
+                            <span class="text-xs font-medium">Twitter/X</span>
+                        </label>
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="threads">
+                            <input type="checkbox" name="social_platforms" value="threads" class="hidden">
+                            <i class="fab fa-threads text-2xl mb-1"></i>
+                            <span class="text-xs font-medium">Threads</span>
+                        </label>
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="tiktok">
+                            <input type="checkbox" name="social_platforms" value="tiktok" class="hidden">
+                            <i class="fab fa-tiktok text-2xl mb-1"></i>
+                            <span class="text-xs font-medium">TikTok</span>
+                        </label>
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="linkedin">
+                            <input type="checkbox" name="social_platforms" value="linkedin" class="hidden">
+                            <i class="fab fa-linkedin text-2xl mb-1" style="color: #0A66C2;"></i>
+                            <span class="text-xs font-medium">LinkedIn</span>
+                        </label>
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="github">
+                            <input type="checkbox" name="social_platforms" value="github" class="hidden">
+                            <i class="fab fa-github text-2xl mb-1"></i>
+                            <span class="text-xs font-medium">GitHub</span>
+                        </label>
+                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="youtube">
+                            <input type="checkbox" name="social_platforms" value="youtube" class="hidden">
+                            <i class="fab fa-youtube text-2xl mb-1" style="color: #FF0000;"></i>
+                            <span class="text-xs font-medium">YouTube</span>
+                        </label>
+                    </div>
+                    
+                    <script>
+                    function filterPlatforms(query) {
+                        query = query.toLowerCase();
+                        document.querySelectorAll('.platform-item').forEach(item => {
+                            const name = item.dataset.name;
+                            item.style.display = name.includes(query) ? 'flex' : 'none';
+                        });
+                    }
+                    </script>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-8">
+                    <a href="{% url 'scanner:dashboard' %}" class="btn btn--ghost">Cancel</a>
+                    <button type="submit" id="submit-btn" class="btn btn--primary px-8">
+                        <i class="fas fa-radar mr-2"></i> Launch Scan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Full Screen Overlay -->
+<div id="scan-overlay" class="fixed inset-0 bg-background/95 z-[9999] hidden flex-col items-center justify-center p-4">
+    <div class="relative w-32 h-32 mb-8">
+        <div class="absolute inset-0 border-4 border-primary/30 rounded-full animate-ping"></div>
+        <div class="absolute inset-0 border-4 border-t-primary border-r-transparent border-b-primary border-l-transparent rounded-full animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+            <i class="fas fa-fingerprint text-4xl text-primary animate-pulse"></i>
+        </div>
+    </div>
+    
+    <h2 class="text-2xl font-bold mb-2">Scanning Target Environment</h2>
+    <p class="text-muted mb-8" id="scan-status-text">Initializing engines...</p>
+    
+    <div class="w-full max-w-md bg-secondary rounded-full h-2 mb-4 overflow-hidden">
+        <div class="h-full bg-primary transition-all duration-300 ease-out" id="progress-fill" style="width: 0%"></div>
+    </div>
+    
+    <div class="grid grid-cols-4 gap-4 w-full max-w-lg mt-8 text-center text-xs text-muted">
+        <div id="step-1" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Connect</div>
+        <div id="step-2" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Breaches</div>
+        <div id="step-3" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Socials</div>
+        <div id="step-4" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Report</div>
+    </div>
+</div>
+
+<script>
+// Tab Switching Logic
+function switchTab(tab) {
+    const compPanel = document.getElementById('comprehensive-panel');
+    const quickPanel = document.getElementById('quick-lookup-panel');
+    const tabComp = document.getElementById('tab-comprehensive');
+    const tabQuick = document.getElementById('tab-quick');
+    
+    if (tab === 'quick') {
+        compPanel.classList.add('hidden');
+        quickPanel.classList.remove('hidden');
+        tabComp.classList.remove('border-primary', 'text-primary', 'bg-background');
+        tabComp.classList.add('border-transparent', 'text-muted');
+        tabQuick.classList.add('border-primary', 'text-primary', 'bg-background');
+        tabQuick.classList.remove('border-transparent', 'text-muted');
+    } else {
+        compPanel.classList.remove('hidden');
+        quickPanel.classList.add('hidden');
+        tabQuick.classList.remove('border-primary', 'text-primary', 'bg-background');
+        tabQuick.classList.add('border-transparent', 'text-muted');
+        tabComp.classList.add('border-primary', 'text-primary', 'bg-background');
+        tabComp.classList.remove('border-transparent', 'text-muted');
+    }
+}
+
+// Quick type option styling
+document.querySelectorAll('.quick-type-option input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll('.quick-type-option').forEach(opt => {
+            opt.classList.remove('border-primary', 'ring-2', 'ring-primary/20');
+        });
+        if (this.checked) {
+            this.closest('.quick-type-option').classList.add('border-primary', 'ring-2', 'ring-primary/20');
+        }
+    });
+});
+
+// Quick scan form submit handler
+document.getElementById('quick-scan-form').addEventListener('submit', function(e) {
+    const overlay = document.getElementById('scan-overlay');
+    const progress = document.getElementById('progress-fill');
+    const status = document.getElementById('scan-status-text');
+    
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    
+    let w = 0;
+    setInterval(() => {
+        w += Math.random() * 8;
+        if(w > 90) w = 90;
+        progress.style.width = w + '%';
+        status.innerText = 'Running quick lookup...';
+    }, 300);
+});
+
+document.getElementById('scan-form').addEventListener('submit', function(e) {
+    // e.preventDefault(); // Uncomment only for debugging UI without submitting
+    const btn = document.getElementById('submit-btn');
+    const overlay = document.getElementById('scan-overlay');
+    const progress = document.getElementById('progress-fill');
+    const status = document.getElementById('scan-status-text');
+    
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    
+    let w = 0;
+    const interval = setInterval(() => {
+        w += Math.random() * 5;
+        if(w > 90) w = 90; // Stall at 90% until page reload
+        progress.style.width = w + '%';
+        
+        if(w > 20) { status.innerText = 'Querying breach databases (HaveIBeenPwned)...'; hl(1); }
+        if(w > 50) { status.innerText = 'Scraping social media profiles...'; hl(2); }
+        if(w > 80) { status.innerText = 'Correlating data points...'; hl(3); }
+        
+    }, 500);
+    
+    function hl(step) {
+        document.querySelectorAll('.step').forEach((el, idx) => {
+            if(idx < step) el.classList.add('text-primary');
+        });
+    }
+});
+</script>
+{% endblock %}

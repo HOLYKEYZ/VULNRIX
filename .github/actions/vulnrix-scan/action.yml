@@ -1,0 +1,259 @@
+name: 'VULNRIX Security Scan'
+description: 'Scan code for vulnerabilities using VULNRIX security scanner'
+author: 'VULNRIX Team'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  api_key:
+    description: 'VULNRIX API key for authentication'
+    required: true
+  mode:
+    description: 'Scan mode: fast, hybrid, or deep'
+    required: false
+    default: 'hybrid'
+  path:
+    description: 'Path to scan (relative to repository root)'
+    required: false
+    default: '.'
+  fail_on:
+    description: 'Fail build on severity level: critical, high, medium, low, or none'
+    required: false
+    default: 'high'
+  output_format:
+    description: 'Output format: json, sarif, or summary'
+    required: false
+    default: 'sarif'
+  vulnrix_url:
+    description: 'VULNRIX API URL (for self-hosted instances)'
+    required: false
+    default: 'https://api.vulnrix.com'
+
+outputs:
+  status:
+    description: 'Scan status: SAFE, VULNERABLE, or ERROR'
+  findings_count:
+    description: 'Total number of findings'
+  critical_count:
+    description: 'Number of critical findings'
+  high_count:
+    description: 'Number of high severity findings'
+  sarif_file:
+    description: 'Path to SARIF output file'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install VULNRIX CLI
+      shell: bash
+      run: |
+        pip install vulnrix-cli || pip install requests
+    
+    - name: Run VULNRIX Scan
+      id: scan
+      shell: bash
+      env:
+        VULNRIX_API_KEY: ${{ inputs.api_key }}
+        VULNRIX_URL: ${{ inputs.vulnrix_url }}
+      run: |
+        # Create scan script
+        cat > /tmp/vulnrix_scan.py << 'EOF'
+        import os
+        import sys
+        import json
+        import requests
+        from pathlib import Path
+
+        API_KEY = os.environ.get('VULNRIX_API_KEY')
+        API_URL = os.environ.get('VULNRIX_URL', 'https://api.vulnrix.com')
+        MODE = '${{ inputs.mode }}'
+        SCAN_PATH = '${{ inputs.path }}'
+        OUTPUT_FORMAT = '${{ inputs.output_format }}'
+        FAIL_ON = '${{ inputs.fail_on }}'
+
+        # Severity order for comparison
+        SEVERITY_ORDER = {'critical': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0}
+
+        def get_files_to_scan(path):
+            """Get all code files to scan."""
+            extensions = {'.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.go', '.rb', '.php', '.c', '.cpp'}
+            files = []
+            scan_path = Path(path)
+            
+            if scan_path.is_file():
+                files.append(scan_path)
+            else:
+                for ext in extensions:
+                    files.extend(scan_path.rglob(f'*{ext}'))
+            
+            return files[:100]  # Limit to 100 files
+
+        def scan_file(file_path):
+            """Scan a single file via API."""
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    code = f.read()
+                
+                response = requests.post(
+                    f'{API_URL}/api/v1/code/scan',
+                    headers={'X-API-Key': API_KEY},
+                    json={
+                        'code': code,
+                        'filename': str(file_path),
+                        'mode': MODE
+                    },
+                    timeout=120
+                )
+                
+                if response.status_code == 200:
+                    return response.json()
+                else:
+                    return {'status': 'ERROR', 'error': response.text}
+            except Exception as e:
+                return {'status': 'ERROR', 'error': str(e)}
+
+        def to_sarif(findings, files_scanned):
+            """Convert findings to SARIF format."""
+            sarif = {
+                "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+                "version": "2.1.0",
+                "runs": [{
+                    "tool": {
+                        "driver": {
+                            "name": "VULNRIX",
+                            "version": "1.0.0",
+                            "informationUri": "https://vulnrix.com",
+                            "rules": []
+                        }
+                    },
+                    "results": []
+                }]
+            }
+            
+            rules_seen = set()
+            
+            for finding in findings:
+                rule_id = finding.get('cwe', 'VULN-001')
+                
+                # Add rule if not seen
+                if rule_id not in rules_seen:
+                    sarif['runs'][0]['tool']['driver']['rules'].append({
+                        "id": rule_id,
+                        "name": finding.get('type', 'Unknown'),
+                        "shortDescription": {"text": finding.get('type', 'Unknown vulnerability')},
+                        "helpUri": f"https://cwe.mitre.org/data/definitions/{rule_id.replace('CWE-', '')}.html"
+                    })
+                    rules_seen.add(rule_id)
+                
+                # Add result
+                sarif['runs'][0]['results'].append({
+                    "ruleId": rule_id,
+                    "level": "error" if finding.get('severity', '').lower() in ['critical', 'high'] else "warning",
+                    "message": {"text": finding.get('reason', finding.get('type', 'Vulnerability detected'))},
+                    "locations": [{
+                        "physicalLocation": {
+                            "artifactLocation": {"uri": finding.get('file', 'unknown')},
+                            "region": {"startLine": finding.get('line', 1)}
+                        }
+                    }]
+                })
+            
+            return sarif
+
+        def main():
+            print(f"🔍 VULNRIX Security Scan")
+            print(f"   Mode: {MODE}")
+            print(f"   Path: {SCAN_PATH}")
+            print()
+            
+            files = get_files_to_scan(SCAN_PATH)
+            print(f"📁 Found {len(files)} files to scan")
+            
+            all_findings = []
+            total_scanned = 0
+            
+            for file_path in files:
+                print(f"   Scanning: {file_path}")
+                result = scan_file(file_path)
+                total_scanned += 1
+                
+                if result.get('status') == 'VULNERABLE':
+                    findings = result.get('findings', [])
+                    for f in findings:
+                        f['file'] = str(file_path)
+                    all_findings.extend(findings)
+            
+            # Count by severity
+            counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
+            for f in all_findings:
+                sev = f.get('severity', 'low').lower()
+                counts[sev] = counts.get(sev, 0) + 1
+            
+            # Output results
+            print()
+            print(f"📊 Scan Complete")
+            print(f"   Files scanned: {total_scanned}")
+            print(f"   Total findings: {len(all_findings)}")
+            print(f"   Critical: {counts['critical']}")
+            print(f"   High: {counts['high']}")
+            print(f"   Medium: {counts['medium']}")
+            print(f"   Low: {counts['low']}")
+            
+            # Set outputs
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                status = 'VULNERABLE' if all_findings else 'SAFE'
+                f.write(f"status={status}\n")
+                f.write(f"findings_count={len(all_findings)}\n")
+                f.write(f"critical_count={counts['critical']}\n")
+                f.write(f"high_count={counts['high']}\n")
+            
+            # Write SARIF
+            if OUTPUT_FORMAT in ['sarif', 'all']:
+                sarif = to_sarif(all_findings, files)
+                sarif_path = 'vulnrix-results.sarif'
+                with open(sarif_path, 'w') as f:
+                    json.dump(sarif, f, indent=2)
+                print(f"\n📄 SARIF output: {sarif_path}")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write(f"sarif_file={sarif_path}\n")
+            
+            # Check fail condition
+            fail_threshold = SEVERITY_ORDER.get(FAIL_ON.lower(), 3)
+            should_fail = False
+            
+            if fail_threshold > 0:
+                if counts['critical'] > 0 and fail_threshold <= 4:
+                    should_fail = True
+                elif counts['high'] > 0 and fail_threshold <= 3:
+                    should_fail = True
+                elif counts['medium'] > 0 and fail_threshold <= 2:
+                    should_fail = True
+                elif counts['low'] > 0 and fail_threshold <= 1:
+                    should_fail = True
+            
+            if should_fail:
+                print(f"\n❌ Build failed: Found {FAIL_ON} or higher severity vulnerabilities")
+                sys.exit(1)
+            else:
+                print(f"\n✅ Scan passed")
+                sys.exit(0)
+
+        if __name__ == '__main__':
+            main()
+        EOF
+        
+        python /tmp/vulnrix_scan.py
+    
+    - name: Upload SARIF
+      if: inputs.output_format == 'sarif' || inputs.output_format == 'all'
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: vulnrix-results.sarif
+      continue-on-error: true

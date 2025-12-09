@@ -1,0 +1,62 @@
+image: python:3.9
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+stages:
+  - test
+  - security
+  - build
+  - deploy
+
+before_script:
+  - python -V
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+  - pip install -r requirements.txt
+
+unit_test:
+  stage: test
+  script:
+    - python manage.py test
+
+# SAST Scan using VULNRIX CLI on itself
+vulnrix_scan:
+  stage: security
+  script:
+    - python cli/vulnrix.py scan --type code --path . --mode fast --fail-on high
+  allow_failure: true
+
+# Build Docker Image
+docker_build:
+  stage: build
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
+
+# Deploy to Staging (Example)
+deploy_staging:
+  stage: deploy
+  script:
+    - echo "Deploying to staging server..."
+    # Add deployment commands here (e.g., SSH, Heroku, AWS)
+  environment:
+    name: staging
+    url: https://staging.vulnrix.com
+  only:
+    - develop

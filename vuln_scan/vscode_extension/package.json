@@ -1,0 +1,21 @@
+{
+  "name": "vuln-scan",
+  "displayName": "Vuln Scan",
+  "description": "Run LLM-powered vulnerability scans from VS Code",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "activationEvents": [
+    "onCommand:vuln-scan.scanFile"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vuln-scan.scanFile",
+        "title": "Vuln Scan: Scan file"
+      }
+    ]
+  }
+}

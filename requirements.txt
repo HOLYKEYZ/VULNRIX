@@ -1,7 +1,13 @@
-requests>=2.31.0
-colorama>=0.4.6
-prettytable>=3.9.0
-Flask>=3.0.0
-python-dotenv>=1.0.0
-gunicorn
+# Django
+Django>=5.0.0
+django-environ>=0.11.2
+dj-database-url>=2.1.0
 
+# Core Dependencies
+requests>=2.31.0
+gunicorn>=21.2.0
+psycopg2-binary>=2.9.9
+
+# Vulnrix Scanner Dependencies
+json_repair>=0.54.0
+rich>=13.7.0

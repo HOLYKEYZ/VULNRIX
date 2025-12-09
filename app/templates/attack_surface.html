@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Attack Surface Map - VULNRIX{% endblock %}
+
+{% block extra_head %}
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+    #network-graph {
+        width: 100%;
+        height: 600px;
+        background-color: #0d1117; /* Dark background */
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--color-text-muted);
+    }
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-7xl pb-10">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+             <a href="{% url 'scanner:view_scan' scan.id %}" class="text-sm text-muted hover:text-primary transition-colors inline-flex items-center gap-1 mb-2">
+                <i class="fas fa-arrow-left"></i> Back to Report
+            </a>
+            <h1 class="text-3xl font-bold tracking-tight">Attack Surface Map</h1>
+            <p class="text-muted">Visualizing relationships between identity, assets, and vulnerabilities.</p>
+        </div>
+        <div>
+            <span class="badge badge--outline font-mono">ID: {{ scan.id|slice:":8" }}</span>
+        </div>
+    </div>
+
+    <!-- Stats & Legend -->
+    <div class="card mb-6">
+        <div class="flex flex-wrap gap-6 justify-between items-center">
+            <div class="flex gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ graph_data.stats.total_nodes }}</div>
+                    <div class="text-xs text-muted">Nodes</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ graph_data.stats.total_edges }}</div>
+                    <div class="text-xs text-muted">Connections</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-destructive">{{ graph_data.stats.breaches }}</div>
+                    <div class="text-xs text-muted">Breaches</div>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-4">
+                <div class="legend-item"><div class="legend-dot" style="background: #3b82f6"></div> Identity</div>
+                <div class="legend-item"><div class="legend-dot" style="background: #10b981"></div> Asset</div>
+                <div class="legend-item"><div class="legend-dot" style="background: #ef4444"></div> Breach</div>
+                <div class="legend-item"><div class="legend-dot" style="background: #8b5cf6"></div> Social</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graph Container -->
+    <div class="relative">
+        <div id="network-graph"></div>
+        
+        <!-- Controls Overlay -->
+        <div class="absolute bottom-4 right-4 flex gap-2">
+            <button class="btn btn--sm btn--secondary shadow-lg" onclick="network.fit({animation: true})">
+                <i class="fas fa-compress"></i> Fit
+            </button>
+            <button class="btn btn--sm btn--secondary shadow-lg" onclick="togglePhysics()">
+                <i class="fas fa-snowflake"></i> Freeze
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ graph_data|json_script:"graph-data" }}
+    <script>
+        const graphData = JSON.parse(document.getElementById('graph-data').textContent);
+    
+    // Convert logic colors to actual hex if needed, 
+    // but the backend service generally provides them.
+    
+    const container = document.getElementById('network-graph');
+    
+    const data = {
+        nodes: new vis.DataSet(graphData.nodes),
+        edges: new vis.DataSet(graphData.edges)
+    };
+    
+    const options = {
+        nodes: {
+            shape: 'dot',
+            size: 20,
+            font: {
+                size: 14,
+                color: '#ffffff',
+                face: 'Inter, sans-serif'
+            },
+            borderWidth: 2,
+            shadow: true
+        },
+        edges: {
+            width: 2,
+            color: { color: '#30363d', highlight: '#58a6ff' },
+            smooth: {
+                type: 'continuous'
+            },
+            arrows: {
+                to: { enabled: true, scaleFactor: 0.5 }
+            }
+        },
+        groups: {
+            identity: { color: { background: '#1e3a8a', border: '#3b82f6' }, size: 25 },
+            asset:    { color: { background: '#064e3b', border: '#10b981' }, size: 25 },
+            breach:   { color: { background: '#7f1d1d', border: '#ef4444' }, size: 30, shape: 'diamond' },
+            social:   { color: { background: '#4c1d95', border: '#8b5cf6' }, size: 20 },
+            vulnerability: { color: { background: '#7f1d1d', border: '#ef4444' }, shape: 'triangle' }
+        },
+        physics: {
+            stabilization: false,
+            barnesHut: {
+                gravitationalConstant: -8000,
+                springConstant: 0.04,
+                springLength: 95
+            }
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 200,
+            zoomView: true
+        }
+    };
+    
+    const network = new vis.Network(container, data, options);
+    
+    let physicsEnabled = true;
+    function togglePhysics() {
+        physicsEnabled = !physicsEnabled;
+        network.setOptions({ physics: { enabled: physicsEnabled } });
+    }
+    
+    // Add event listeners for interaction if needed
+    network.on("click", function (params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const node = data.nodes.get(nodeId);
+            console.log('Clicked node:', node);
+            // Could show a detailed modal sidebar here
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Results - VULNRIX{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-7xl pb-10">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <div class="mb-2">
+                <a href="{% url 'scanner:dashboard' %}" class="text-sm text-muted hover:text-primary transition-colors inline-flex items-center gap-1">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight mb-1">Intelligence Report</h1>
+            <div class="flex items-center gap-3 text-sm text-muted">
+                <span><i class="far fa-calendar-alt mr-1"></i> {{ scan.created_at|date:"M d, Y" }}</span>
+                <span><i class="far fa-clock mr-1"></i> {{ scan.created_at|date:"H:i" }}</span>
+                <span class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-mono">ID: {{ scan.id|slice:":8" }}</span>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.print()" class="btn btn--outline">
+                <i class="fas fa-download mr-2"></i> Export PDF
+            </button>
+            <a href="{% url 'scanner:new_scan' %}" class="btn btn--primary">
+                <i class="fas fa-redo-alt mr-2"></i> New Scan
+            </a>
+        </div>
+    </div>
+
+    <!-- Overview Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Main Score Card -->
+        {% with risk_score=scan.risk_score %}
+        <div class="card lg:col-span-1 flex flex-col items-center justify-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-background/50 pointer-events-none"></div>
+            <h3 class="text-sm font-medium text-muted uppercase tracking-wider mb-6">Digital Risk Score</h3>
+            
+            <div class="relative w-48 h-48 mb-4">
+                <svg viewBox="0 0 100 100" class="w-full h-full rotate-[-90deg]">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" class="text-secondary" stroke-width="8"/>
+                    <circle cx="50" cy="50" r="45" fill="none" 
+                        stroke="{% if risk_score <= 30 %}#10b981{% elif risk_score <= 70 %}#f59e0b{% else %}#ef4444{% endif %}" 
+                        stroke-width="8" 
+                        stroke-dasharray="{{ risk_score }} 283"
+                        stroke-linecap="round"
+                        class="text-primary transition-all duration-1000 ease-out" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span class="text-5xl font-bold tracking-tighter">{{ risk_score }}</span>
+                    <span class="text-xs text-muted uppercase mt-1">/ 100</span>
+                </div>
+            </div>
+
+            <div class="px-3 py-1 rounded-full text-sm font-semibold border
+                {% if risk_score <= 30 %}bg-green-500/10 text-green-500 border-green-500/20
+                {% elif risk_score <= 70 %}bg-yellow-500/10 text-yellow-500 border-yellow-500/20
+                {% else %}bg-destructive/10 text-destructive border-destructive/20{% endif %}">
+                {% if risk_score <= 30 %}<i class="fas fa-shield-alt mr-1"></i> Low Risk
+                {% elif risk_score <= 70 %}<i class="fas fa-exclamation-circle mr-1"></i> Medium Risk
+                {% else %}<i class="fas fa-biohazard mr-1"></i> High Risk{% endif %}
+            </div>
+        </div>
+        {% endwith %}
+
+        <!-- Target Details & Stats -->
+        <div class="card lg:col-span-2 flex flex-col justify-between">
+            <div>
+                <h3 class="text-lg font-semibold mb-4 border-b border-border pb-2">Target Profile</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-muted uppercase">Name</p>
+                            <p class="font-medium truncate">{{ scan.name|default:"N/A" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-muted uppercase">Domain/IP</p>
+                            <p class="font-medium truncate">{{ scan.domain|default:scan.ip|default:"N/A" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-muted uppercase">Email</p>
+                            <p class="font-medium truncate">{{ scan.email|default:"N/A" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                            <i class="fas fa-at"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-muted uppercase">Username</p>
+                            <p class="font-medium truncate">{{ scan.username|default:"N/A" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if risk_breakdown %}
+            <div class="grid grid-cols-2 gap-4 border-t border-border pt-4">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm font-medium">Public Exposure</span>
+                        <span class="text-sm font-bold text-primary">{{ risk_breakdown.public_exposure.score }}/50</span>
+                    </div>
+                    <div class="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                        <div class="bg-primary h-full rounded-full" style="width: {{ risk_breakdown.public_exposure.score|add:risk_breakdown.public_exposure.score }}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm font-medium">Sensitive Data</span>
+                        <span class="text-sm font-bold text-destructive">{{ risk_breakdown.sensitive_exposure.score }}/50</span>
+                    </div>
+                    <div class="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                        <div class="bg-destructive h-full rounded-full" style="width: {{ risk_breakdown.sensitive_exposure.score|add:risk_breakdown.sensitive_exposure.score }}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tabs Content Area (Using simple vertical layout for now to ensure visibility) -->
+    
+    <!-- CRITICAL FINDINGS (Breaches) -->
+    {% if breach_data and breach_data.total_breaches > 0 %}
+    <div class="mb-8 animate-in slide-in-from-bottom-4 duration-500">
+        <div class="flex items-center gap-2 mb-4">
+            <h2 class="text-xl font-bold text-destructive">Critical Findings</h2>
+            <span class="badge badge--destructive">{{ breach_data.total_breaches }} Breaches</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for breach in breach_data.breaches %}
+            <div class="card border-destructive/50 bg-destructive/5 hover:bg-destructive/10 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold text-lg">{{ breach.Name }}</h3>
+                    <i class="fas fa-exclamation-triangle text-destructive"></i>
+                </div>
+                <div class="text-sm text-muted mb-3">
+                    <p><span class="font-semibold text-foreground">Date:</span> {{ breach.BreachDate }}</p>
+                    <p><span class="font-semibold text-foreground">Domain:</span> {{ breach.Domain }}</p>
+                </div>
+                <div class="flex flex-wrap gap-1 mt-auto">
+                    {% for class in breach.DataClasses|slice:":3" %}
+                    <span class="text-xs px-2 py-1 rounded bg-background border border-border">{{ class }}</span>
+                    {% endfor %}
+                    {% if breach.DataClasses|length > 3 %}
+                    <span class="text-xs px-2 py-1 rounded bg-background border border-border">+{{ breach.DataClasses|length|add:"-3" }} more</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Findings Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- IntelX Intelligence -->
+        {% if intelx_results %}
+        <div class="card h-fit lg:col-span-2">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="fas fa-database text-primary"></i> IntelX Intelligence
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for type, data in intelx_results.items %}
+                    {% if data and data.records %}
+                    <div class="border rounded-lg p-4 bg-secondary/10">
+                        <h3 class="font-medium mb-2 flex items-center justify-between">
+                            <span class="capitalize">{{ type }} Records</span>
+                            <span class="badge badge--outline">{{ data.records|length }}</span>
+                        </h3>
+                        <div class="space-y-2">
+                            {% for record in data.records|slice:":5" %}
+                            <div class="text-sm text-muted border-b border-border/50 pb-1 last:border-0 last:pb-0">
+                                <div class="font-mono text-xs text-foreground truncate">{{ record.name|default:"Unknown" }}</div>
+                                <div class="flex justify-between text-[10px]">
+                                    <span>{{ record.date|default:"N/A" }}</span>
+                                    <span>{{ record.bucket|default:"Unknown Source" }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Social Media -->
+        {% if social_results %}
+        <div class="card h-fit">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="fas fa-share-alt text-primary"></i> Social Footprint
+            </h2>
+            <div class="space-y-4">
+                {% for platform, results in social_results.items %}
+                {% if results %}
+                <div class="border rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium capitalize flex items-center gap-2">
+                            <i class="fab fa-{{ platform }} text-muted"></i> {{ platform }}
+                        </span>
+                        <span class="badge badge--secondary text-xs">{{ results|length }} matches</span>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        {% for result in results|slice:":3" %}
+                        <a href="{{ result.link }}" target="_blank" class="text-sm text-blue-400 hover:underline truncate block">
+                            {{ result.title }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Web Mentions -->
+        {% if search_results %}
+        <div class="card h-fit">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="fas fa-globe text-primary"></i> Public Exposure
+            </h2>
+            
+            {% if search_results.email %}
+            <div class="alert alert--destructive mb-4">
+                <i class="fas fa-at"></i>
+                <div>
+                    <h4 class="font-bold">Email Mentions Detected</h4>
+                    <p class="text-xs">Your email address appears in {{ search_results.email|length }} public search results.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="space-y-3">
+                {% for result in search_results.name|slice:":5" %}
+                <div class="p-3 rounded bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                    <a href="{{ result.link }}" target="_blank" class="font-medium text-primary hover:underline block mb-1">
+                        {{ result.title }}
+                    </a>
+                    <p class="text-xs text-muted line-clamp-2">{{ result.snippet }}</p>
+                    <div class="mt-2 text-xs text-muted flex items-center gap-1">
+                        <i class="fas fa-link text-[10px]"></i> {{ result.link|truncatechars:40 }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- AI Analysis Footer -->
+    {% if scan.results.ai_recommendations %}
+    <div class="mt-8">
+        <div class="card border-primary/50 bg-primary/5">
+            <div class="flex items-start gap-4">
+                <div class="p-3 rounded-full bg-primary/20 text-primary shrink-0">
+                    <i class="fas fa-robot text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-foreground mb-2">AI Security Analysis</h2>
+                    <div class="prose prose-invert prose-sm max-w-none text-muted-foreground">
+                        {{ scan.results.ai_recommendations|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,5 +1,7 @@
 # Environment variables
 .env
+.env.local
+.env.production
 
 # Python
 __pycache__/
@@ -39,4 +41,33 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
 
+# Database
+db.sqlite3
+*.sqlite3
+
+# Node
+node_modules/
+npm-debug.log
+
+# Django
+staticfiles/
+media/uploads/
+*.pot
+*.mo
+
+# Compiled C modules
+*.dll
+*.pyd
+*.o
+
+# Secrets and keys
+*.pem
+*.key
+secrets.json
+
+# Coverage
+htmlcov/
+.coverage
+.pytest_cache/

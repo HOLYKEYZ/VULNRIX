@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VULNRIX - Security Intelligence Platform">
+    <title>{% block title %}VULNRIX{% endblock %}</title>
+    {% load static %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ["class", '[data-theme="dark"]'],
+            theme: {
+                container: {
+                    center: true,
+                    padding: "2rem",
+                    screens: { "2xl": "1400px" },
+                },
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+                        secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+                        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+                        muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+                        accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+                        popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
+                        card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+                    },
+                    borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+                    animation: { "accordion-down": "accordion-down 0.2s ease-out", "accordion-up": "accordion-up 0.2s ease-out" },
+                },
+            },
+        }
+    </script>
+
+    <!-- Custom Overrides -->
+    <link rel="stylesheet" href="{% static 'css/vulnrix.css' %}">
+    
+    <!-- Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Public Layout Wrapper (Flex Column for Sticky Footer) -->
+    <div class="w-full min-h-screen flex flex-col bg-background">
+        <main class="flex-1 flex flex-col items-center justify-center p-4">
+            
+            {% if messages %}
+            <div class="mb-6 w-full max-w-md">
+                {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert--error{% else %}alert--success{% endif %}">
+                    <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                    <div class="text-sm">{{ message }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+
+        {% block footer %}
+        <footer class="py-6 text-center border-t border-border/30">
+            <p class="text-sm text-muted-foreground mb-2">Digital Security, Our Priority</p>
+            <div class="flex items-center justify-center gap-3 text-xs text-muted-foreground/70">
+                <span>&copy; {% now "Y" %} VULNRIX</span>
+                <span>•</span>
+                <a href="https://github.com/HOLYKEYZ/VULNRIX" target="_blank" class="hover:text-primary transition-colors inline-flex items-center gap-1">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+            </div>
+        </footer>
+        {% endblock %}
+    </div>
+
+<!-- JS Utilities -->
+<script src="{% static 'js/vulnrix-utils.js' %}"></script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
