@@ -99,6 +99,13 @@ DATABASE_URL = env('DATABASE_URL', default=None)
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
+# Sanitize DATABASE_URL (Fix common copy-paste errors)
+if DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.strip()
+    if DATABASE_URL.startswith("psql "):
+        DATABASE_URL = DATABASE_URL.split(" ", 1)[1]
+    DATABASE_URL = DATABASE_URL.strip("'").strip('"')
+
 if DATABASE_URL:
     import dj_database_url
     DATABASES = {
