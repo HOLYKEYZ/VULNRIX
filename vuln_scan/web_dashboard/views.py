@@ -207,7 +207,8 @@ def dashboard(request):
             logger.debug(f"Traceback: {__import__('traceback').format_exc()}")
             return JsonResponse({
                 "status": "ERROR", 
-                "error": str(e)
+                "error": f"Scan failed: {str(e)}",
+                "error_code": "SCAN_ERROR"
             }, status=500)
         finally:
             if tmp_path and os.path.exists(tmp_path):
