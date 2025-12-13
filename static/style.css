@@ -195,6 +195,14 @@ h6 { font-size: var(--font-size-sm); }
 
 p { margin: 0; }
 
+/* Global Text Visibility Override */
+.text-muted {
+    color: var(--color-text-muted) !important;
+}
+.text-muted-foreground {
+    color: var(--color-text-muted) !important;
+}
+
 a {
     color: var(--color-primary);
     text-decoration: none;
