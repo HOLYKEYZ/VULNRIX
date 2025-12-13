@@ -275,12 +275,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     legend: {
                         position: 'bottom',
                         labels: { 
-                            color: '#aaa', 
+                            color: '#e5e7eb', // Force Light Gray (Tailwind gray-200)
                             padding: 10, 
-                            font: { size: 10 }, 
+                            font: { size: 10, family: "'JetBrains Mono', monospace" }, 
                             usePointStyle: true,
                             boxWidth: 8
                         }
+                    },
+                    tooltip: {
+                        backgroundColor: '#2a2a35',
+                        titleColor: '#ffffff',
+                        bodyColor: '#d1d5db',
+                        borderColor: '#3f3f46',
+                        borderWidth: 1
                     }
                 }
             }
