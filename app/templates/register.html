@@ -3,11 +3,13 @@
 {% block title %}Register - VULNRIX{% endblock %}
 
 {% block content %}
+    {% load static %}
     <div style="max-width: 450px; width: 100%;">
         <!-- Branding -->
         <div class="flex flex-col items-center mb-6">
-            <div class="mb-4 text-primary">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="mb-4 flex items-center gap-2">
+                <img src="{% static 'favicon.svg' %}" alt="VULNRIX" class="w-10 h-10">
+                <span class="text-2xl font-bold tracking-tight" style="color: #00d4d4;">VULNRIX</span>
             </div>
             <h1 class="text-2xl font-bold tracking-tight">Create an account</h1>
             <p class="text-sm text-muted">Join VULNRIX to secure your footprint & code</p>
@@ -59,7 +61,7 @@
                 </div>
                 {% endif %}
                 
-                <button type="submit" class="btn w-full mt-2 !bg-green-600 hover:!bg-green-700 !text-white !border-green-600 shadow-lg shadow-green-900/20">
+                <button type="submit" class="btn btn--primary w-full mt-2 shadow-[0_0_15px_rgba(0,212,212,0.3)]">
                     Create account
                 </button>
             </form>
