@@ -56,8 +56,8 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
     
-    /* Primary changed to green for SafeGrey-like aesthetic */
-    --primary: 160 84% 39%;  /* #10b981 */
+    /* Primary changed to Teal for Brand Identity */
+    --primary: 180 100% 42%;  /* #00d4d4 */
     --primary-foreground: 0 0% 100%;
     
     --secondary: 240 3.7% 15.9%;
@@ -78,7 +78,7 @@
     
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 160 84% 39%;  /* Green ring for focus states */
+    --ring: 180 100% 42%;  /* Teal ring for focus states */
 }
 
 /* ========================================
