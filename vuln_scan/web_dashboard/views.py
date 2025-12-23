@@ -105,16 +105,42 @@ def dashboard(request):
     if request.method == "GET":
         # Get last scan and history for display
         last_scan = get_last_scan(request.user)
-        scan_history = get_scan_history(request.user, limit=5)
+        scan_history = get_scan_history(request.user, limit=10)
         
         # Get project scan history
         from .models import ScanProject
-        project_history = list(ScanProject.objects.filter(user=request.user).order_by('-created_at')[:5])
+        project_history = list(ScanProject.objects.filter(user=request.user).order_by('-created_at')[:10])
+        
+        # Combine and sort all scans by created_at (newest first)
+        combined_history = []
+        for scan in scan_history:
+            combined_history.append({
+                'type': 'file',
+                'id': scan.id,
+                'name': scan.filename,
+                'status': scan.status,
+                'created_at': scan.created_at,
+                'detail': f"{scan.total_findings} issues",
+            })
+        for project in project_history:
+            combined_history.append({
+                'type': 'project',
+                'id': project.id,
+                'name': project.name,
+                'status': project.status,
+                'created_at': project.created_at,
+                'detail': f"{project.total_files} files",
+            })
+        
+        # Sort by created_at descending (newest first)
+        combined_history.sort(key=lambda x: x['created_at'], reverse=True)
+        combined_history = combined_history[:10]  # Limit to 10 total
         
         context = {
             'last_scan': last_scan,
             'scan_history': scan_history,
             'project_history': project_history,
+            'combined_history': combined_history,
         }
         
         # If last scan exists, add its findings for display
@@ -454,6 +480,15 @@ def start_repo_scan(request):
                         status='PENDING'
                     )
                     files_created.append(res)
+                    
+                    # Limit to 50 files max for stability
+                    if len(files_created) >= 50:
+                        break
+            if len(files_created) >= 50:
+                break
+        
+        # Check if we hit the limit
+        exceeded_limit = len(files_created) >= 50
         
         project.total_files = len(files_created)
         project.status = 'READY'
@@ -462,7 +497,9 @@ def start_repo_scan(request):
         return JsonResponse({
             "project_id": project.id,
             "total_files": project.total_files,
-            "status": "READY"
+            "status": "READY",
+            "limit_exceeded": exceeded_limit,
+            "max_files": 50
         })
         
     except Exception as e:

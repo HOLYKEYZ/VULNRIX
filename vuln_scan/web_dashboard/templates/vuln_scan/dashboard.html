@@ -144,7 +144,11 @@
                     </div>
                     <h2 class="text-2xl font-bold">Scan Repository or ZIP</h2>
                     <p class="text-muted max-w-lg mx-auto">
-                        Enter a public GitHub/GitLab URL. We'll clone it, scan all supported code files, and provide a comprehensive security analysis.
+                        Enter a public GitHub/GitLab URL. We'll clone it and scan all supported code files.
+                    </p>
+                    <p class="text-xs text-muted-foreground max-w-lg mx-auto mt-2">
+                        <i class="fas fa-info-circle mr-1 text-primary"></i>
+                        Limit: <strong>50 files max</strong> • 200KB per file • Source code files only
                     </p>
                     
                     <div class="flex gap-2 max-w-lg mx-auto">
@@ -228,68 +232,34 @@
             </div>
         </div>
 
-        <!-- Right Sidebar: History -->
+        <!-- Right Sidebar: Scan History (Unified & Sorted) -->
         <div class="lg:col-span-1">
-            {% if scan_history %}
+            {% if combined_history %}
             <div class="card h-fit sticky top-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-semibold flex items-center gap-2">
-                        <i class="fas fa-history text-muted"></i> Recent Scans
+                        <i class="fas fa-history text-muted"></i> Scan History
                     </h3>
                 </div>
-                <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                    {% for scan in scan_history %}
-                    <div onclick="loadScanResult({{ scan.id }})" 
+                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {% for item in combined_history %}
+                    <div onclick="{% if item.type == 'file' %}loadScanResult({{ item.id }}){% else %}loadProjectResult({{ item.id }}){% endif %}" 
                          class="group p-3 rounded-lg border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer">
                         <div class="flex items-start justify-between mb-2">
                             <div class="flex items-center gap-2">
-                                <i class="fas fa-code text-xs text-muted"></i>
-                                <span class="font-medium text-sm truncate max-w-[120px]">{{ scan.filename }}</span>
+                                <i class="fas {% if item.type == 'file' %}fa-file-code{% else %}fa-folder{% endif %} text-xs text-muted"></i>
+                                <span class="font-medium text-sm truncate max-w-[120px]">{{ item.name }}</span>
                             </div>
                             <span class="badge text-[10px] px-1.5 py-0.5 
-                                {% if scan.status == 'SAFE' %}bg-green-500/10 text-green-500
-                                {% elif scan.status == 'VULNERABLE' %}bg-red-500/10 text-red-500
+                                {% if item.status == 'SAFE' or item.status == 'COMPLETED' %}bg-green-500/10 text-green-500
+                                {% elif item.status == 'VULNERABLE' or item.status == 'ERROR' %}bg-red-500/10 text-red-500
                                 {% else %}bg-yellow-500/10 text-yellow-500{% endif %}">
-                                {{ scan.status }}
+                                {{ item.status }}
                             </span>
                         </div>
                         <div class="flex items-center justify-between text-xs text-muted">
-                            <span>{{ scan.created_at|date:"M d, H:i" }}</span>
-                            <span>{{ scan.total_findings }} issues</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-            
-            <!-- Project/Repo Scan History -->
-            {% if project_history %}
-            <div class="card h-fit sticky top-6 mt-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold flex items-center gap-2">
-                        <i class="fab fa-github text-muted"></i> Repo Scans
-                    </h3>
-                </div>
-                <div class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    {% for project in project_history %}
-                    <div onclick="loadProjectResult({{ project.id }})" 
-                         class="group p-3 rounded-lg border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer">
-                        <div class="flex items-start justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-folder text-xs text-muted"></i>
-                                <span class="font-medium text-sm truncate max-w-[120px]">{{ project.name }}</span>
-                            </div>
-                            <span class="badge text-[10px] px-1.5 py-0.5 
-                                {% if project.status == 'COMPLETED' %}bg-green-500/10 text-green-500
-                                {% elif project.status == 'ERROR' %}bg-red-500/10 text-red-500
-                                {% else %}bg-yellow-500/10 text-yellow-500{% endif %}">
-                                {{ project.status }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs text-muted">
-                            <span>{{ project.created_at|date:"M d, H:i" }}</span>
-                            <span>{{ project.total_files }} files</span>
+                            <span>{{ item.created_at|date:"M d, H:i" }}</span>
+                            <span>{{ item.detail }}</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -843,14 +813,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.findings.forEach(f => {
                         const div = document.createElement('div');
                         div.className = 'flex items-center justify-between p-3 hover:bg-muted/30 cursor-pointer transition-colors';
-                        const sevClass = f.severity === 'HIGH' ? 'text-red-500' : (f.severity === 'MEDIUM' ? 'text-yellow-500' : 'text-green-500');
+                        const sev = (f.severity || 'SAFE').toUpperCase();
+                        // Inline style for guaranteed color
+                        const sevColor = sev === 'HIGH' || sev === 'CRITICAL' ? '#ef4444' : (sev === 'MEDIUM' ? '#eab308' : '#22c55e');
+                        const sevWeight = sev === 'HIGH' || sev === 'CRITICAL' ? 'bold' : 'normal';
                         div.innerHTML = `
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-file-code text-muted text-xs"></i>
                                 <span class="font-mono text-sm truncate max-w-[200px]" title="${f.filename}">${f.filename}</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-medium ${sevClass}">${f.severity}</span>
+                                <span class="text-xs font-medium" style="color: ${sevColor}; font-weight: ${sevWeight};">${f.severity}</span>
                                 <span class="text-xs text-muted">${f.risk_score}</span>
                                 <i class="fas fa-chevron-right text-xs text-muted"></i>
                             </div>
@@ -988,6 +961,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             
             if(!res.ok) throw new Error(data.error);
+            
+            // Show warning if limit was exceeded
+            if(data.limit_exceeded) {
+                addLog(`⚠️ Repo has more than ${data.max_files} files. Only first ${data.max_files} will be scanned.`, 'error');
+            }
             
             orchestrateProjectScan(data.project_id, data.total_files);
             
