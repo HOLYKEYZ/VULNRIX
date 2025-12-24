@@ -1,18 +1,10 @@
 # VULNRIX 🛡️
 
-**All-in-one security platform(OSINT)** for digital footprint analysis & code vulnerability scanning.
+**All-in-one security platform** For Code vulnerability scanning/ digital footprint analysis.
 
 ---
 
 ## Features
-
-### 🔍 Digital Footprint Scanner
-- **Email** – Breach checking, 
-- **Dark Web** mentions , monitoring
-- **Phone** – Carrier lookup, validation
-- **Domain/IP** – WHOIS, DNS, port scanning
-- **Username/name** – Social media and webseach enumeration
-- **Quick Lookup** – Scan single items fast
 
 ### 🛡️ Code/File Vulnerability Scanner
 - **Multi-mode** – Fast, Hybrid, or Deep AI analysis
@@ -21,6 +13,14 @@
 - **Detections** – SQLi, XSS, command injection, secrets
 - **VirusTotal** – file Malware scanning integration
 - **AI Malicious Detection** – Detects Code-generated malware patterns
+
+### 🔍 Digital Footprint Scanner
+- **Email** – Breach checking, 
+- **Dark Web** mentions , monitoring
+- **Phone** – Carrier lookup, validation
+- **Domain/IP** – WHOIS, DNS, port scanning
+- **Username/name** – Social media and webseach enumeration
+- **Quick Lookup** – Scan single items fast
 
 ---
 
