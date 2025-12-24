@@ -16,6 +16,8 @@
 
 ### 🛡️ Code/File Vulnerability Scanner
 - **Multi-mode** – Fast, Hybrid, or Deep AI analysis
+- **Repo Scan** – Clone and analyze public Git repositories (limit: 50 files max)
+- **Zip Scan** – Upload and scan ZIP archives of source code
 - **Detections** – SQLi, XSS, command injection, secrets
 - **VirusTotal** – file Malware scanning integration
 - **AI Malicious Detection** – Detects Code-generated malware patterns
@@ -86,6 +88,12 @@ Then:
 python manage.py collectstatic
 gunicorn digitalshield.wsgi:application
 ```
+
+---
+
+## Author
+
+Joseph Ayanda
 
 ---
 
