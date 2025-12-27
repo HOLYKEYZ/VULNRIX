@@ -6,63 +6,60 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ========================================
-   CSS Variables (Design Tokens - Zinc Scale)
+   CSS Variables (Design Tokens - Premium SaaS Zinc)
    ======================================== */
 :root {
-    /* Colors - Light Mode (Default Zinc) */
+    /* Colors - Light Mode fallback (Zinc) */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-    
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
-    
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    
     --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
-    
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
-    
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
-    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
-    
     --radius: 0.5rem;
     
-    /* VULNRIX Specific Brand Colors */
-    --brand-primary: #00d4d4; /* Keep the teal as a specific brand accent */
+    /* Brand Accent - Teal */
+    --brand-primary: #00d4d4;
     --brand-primary-foreground: #000000;
 }
 
-/* Dark Mode (Zinc) */
-[data-theme="dark"] {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+/* Dark Mode (Zinc Scale - Premium) */
+[data-theme="dark"], .dark {
+    /* Background: Almost Black (Zinc 950) */
+    --background: 240 10% 3.9%; /* fallback */
+    --background: 240 5.9% 4%; /* #09090b Zinc 950ish */
     
-    --card: 240 10% 3.9%;
+    --foreground: 0 0% 98%; /* Zinc 50 */
+    
+    /* Card: Slightly lighter (Zinc 900) */
+    --card: 240 3.7% 8%; /* #18181b */
     --card-foreground: 0 0% 98%;
     
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
     
-    /* Primary changed to Teal for Brand Identity */
-    --primary: 180 100% 42%;  /* #00d4d4 */
-    --primary-foreground: 0 0% 100%;
+    /* Primary: White for high contrast actions */
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
     
+    /* Secondary: Zinc 800 */
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     
+    /* Muted: Zinc 800/400 */
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
     
@@ -72,13 +69,13 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Success color - green accent */
-    --success: 160 84% 39%;  /* #10b981 */
-    --success-foreground: 0 0% 100%;
-    
+    /* Borders: Very Subtle (Zinc 800) */
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 180 100% 42%;  /* Teal ring for focus states */
+    --ring: 240 4.9% 83.9%;
+    
+    /* Brand Specific */
+    --brand-primary: #00d4d4;
 }
 
 /* ========================================
@@ -576,41 +573,87 @@ tr:hover { background-color: hsl(var(--muted) / 0.5); }
 }
 
 /* ==========================================================================
-   NUCLEAR OVERRIDES - DISABLED
-   (These were breaking the Welcome Page design)
+   DARK MODE VISIBILITY ENHANCEMENTS
    ========================================================================== */
-/* 
-body, p, span, div, li, td, th, input, button, a, label, h1, h2, h3, h4, h5, h6 {
+[data-theme="dark"], .dark {
+    /* Ensure muted text is readable on dark backgrounds */
+    --muted-foreground: 0 0% 70%; /* Brighter for visibility */
+}
+
+/* Explicit text color fixes for dark mode */
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .text-muted-foreground,
+.dark .text-muted,
+.dark .text-muted-foreground {
+    color: #a1a1aa !important; /* Zinc 400 - readable gray */
+}
+
+/* Sidebar section titles - visible */
+[data-theme="dark"] .sidebar-section-title,
+.dark .sidebar-section-title {
+    color: #71717a !important; /* Zinc 500 */
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+}
+
+/* Sidebar links - readable */
+[data-theme="dark"] .sidebar-link,
+.dark .sidebar-link {
+    color: #d4d4d8 !important; /* Zinc 300 */
+}
+
+[data-theme="dark"] .sidebar-link:hover,
+.dark .sidebar-link:hover {
     color: #ffffff !important;
-    opacity: 1 !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: #00d4d4 !important;
+[data-theme="dark"] .sidebar-link.active,
+.dark .sidebar-link.active {
+    color: #ffffff !important;
+    background: linear-gradient(90deg, rgba(0, 212, 212, 0.25) 0%, rgba(0, 212, 212, 0.05) 70%, transparent 100%) !important;
+    border-left: 3px solid #00d4d4;
+    padding-left: calc(0.75rem - 3px);
+    font-weight: 500;
 }
 
-.text-muted, .text-gray-500, .text-zinc-500, .text-slate-500, .text-gray-400, .text-muted-foreground {
-    color: #d1d5db !important;
-    opacity: 1 !important;
+/* Teal Brand Accent Classes */
+.text-brand {
+    color: var(--brand-primary) !important;
 }
 
-.text-primary {
-    color: #00d4d4 !important;
+.bg-brand {
+    background-color: var(--brand-primary) !important;
 }
 
-.text-destructive {
-    color: #ef4444 !important;
+.border-brand {
+    border-color: var(--brand-primary) !important;
 }
 
-.text-success, .text-green-500 {
-    color: #10b981 !important;
+/* Gradient Accent Bar (for pages) */
+.gradient-accent-bar {
+    height: 2px;
+    background: linear-gradient(90deg, #00d4d4, #00d4d4 30%, transparent 100%);
 }
 
-.text-warning, .text-yellow-500, .text-orange-500 {
-    color: #f59e0b !important;
-}
+/* Success/Status Indicator Colors */
+.text-success { color: #10b981 !important; }
+.text-warning { color: #f59e0b !important; }
+.text-destructive { color: #ef4444 !important; }
 
-.bg-background {
-    background-color: #0a0a0f !important;
+/* Card Accent Gradients (Bottom Edge) */
+.card-accent-teal {
+    position: relative;
 }
-*/
+.card-accent-teal::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00d4d4, transparent);
+    border-radius: 0 0 var(--radius) var(--radius);
+}

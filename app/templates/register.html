@@ -4,71 +4,102 @@
 
 {% block content %}
     {% load static %}
-    <div style="max-width: 450px; width: 100%;">
-        <!-- Branding -->
-        <div class="flex flex-col items-center mb-6">
-            <div class="mb-4 flex items-center gap-2">
-                <img src="{% static 'favicon.svg' %}" alt="VULNRIX" class="w-10 h-10">
-                <span class="text-2xl font-bold tracking-tight" style="color: #00d4d4;">VULNRIX</span>
-            </div>
-            <h1 class="text-2xl font-bold tracking-tight">Create an account</h1>
-            <p class="text-sm text-muted">Join VULNRIX to secure your footprint & code</p>
-        </div>
+    
+    <style>
+        .auth-input input {
+            width: 100%;
+            background-color: #09090b; /* Zinc 950 */
+            border: 1px solid #27272a; /* Zinc 800 */
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: white;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .auth-input input:focus {
+            outline: none;
+            border-color: #00d4d4;
+            box-shadow: 0 0 0 1px #00d4d4;
+        }
+    </style>
+
+    <div class="flex flex-col items-center justify-center min-h-[90vh] w-full px-4 py-10">
         
-        <!-- Register Form -->
-        <div class="card bg-card border shadow-sm">
+        <div class="w-full max-w-[450px] bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-2xl relative overflow-hidden">
+            <!-- Top Gradient Accent -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 to-emerald-500"></div>
+
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-950 border border-zinc-800 mb-4 shadow-inner">
+                    <img src="{% static 'favicon.svg' %}" alt="VULNRIX" class="w-8 h-8">
+                </div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Create an account</h1>
+                <p class="text-sm text-zinc-400 mt-2">Join VULNRIX to secure your code & infrastructure</p>
+            </div>
+            
+            <!-- Register Form -->
             <form method="POST" class="flex flex-col gap-4">
                 {% csrf_token %}
                 
-                <div class="flex flex-col gap-2">
-                    <label for="id_username" class="text-sm font-medium leading-none">Username</label>
-                    {{ form.username }}
-                    {% if form.username.errors %}
-                    <p class="text-xs text-destructive">{{ form.username.errors.0 }}</p>
-                    {% endif %}
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex flex-col gap-2 auth-input">
+                        <label for="id_username" class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <p class="text-xs text-red-500 mt-1">{{ form.username.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex flex-col gap-2 auth-input">
+                        <label for="id_email" class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Email Address</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <p class="text-xs text-red-500 mt-1">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                 </div>
                 
-                <div class="flex flex-col gap-2">
-                    <label for="id_email" class="text-sm font-medium leading-none">Email Address</label>
-                    {{ form.email }}
-                    {% if form.email.errors %}
-                    <p class="text-xs text-destructive">{{ form.email.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                
-                <div class="flex flex-col gap-2">
-                    <label for="id_password1" class="text-sm font-medium leading-none">Password</label>
+                <div class="flex flex-col gap-2 auth-input">
+                    <label for="id_password1" class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Password</label>
                     {{ form.password1 }}
                     {% if form.password1.errors %}
-                    <p class="text-xs text-destructive">{{ form.password1.errors.0 }}</p>
+                        <p class="text-xs text-red-500 mt-1">{{ form.password1.errors.0 }}</p>
                     {% endif %}
-                    <p class="text-[0.8rem] text-muted-foreground">Must be at least 8 characters</p>
                 </div>
                 
-                <div class="flex flex-col gap-2">
-                    <label for="id_password2" class="text-sm font-medium leading-none">Confirm Password</label>
+                <div class="flex flex-col gap-2 auth-input">
+                    <label for="id_password2" class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Confirm Password</label>
                     {{ form.password2 }}
                     {% if form.password2.errors %}
-                    <p class="text-xs text-destructive">{{ form.password2.errors.0 }}</p>
+                        <p class="text-xs text-red-500 mt-1">{{ form.password2.errors.0 }}</p>
                     {% endif %}
                 </div>
                 
                 {% if form.non_field_errors %}
-                <div class="alert alert--error text-xs p-3">
+                <div class="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg">
                     {% for error in form.non_field_errors %}
-                    <span>{{ error }}</span>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ error }}</span>
+                    </div>
                     {% endfor %}
                 </div>
                 {% endif %}
                 
-                <button type="submit" class="btn btn--primary w-full mt-2 shadow-[0_0_15px_rgba(0,212,212,0.3)]">
+                <button type="submit" class="btn bg-teal-500 hover:bg-teal-400 text-black border-0 w-full h-10 font-bold rounded-lg transition-all mt-4 shadow-lg shadow-teal-500/10">
                     Create account
                 </button>
             </form>
             
-            <div class="mt-6 text-center text-sm text-muted">
-                Already have an account? 
-                <a href="{% url 'accounts:login' %}" class="underline underline-offset-4 hover:text-primary">Sign in</a>
+            <!-- Footer -->
+            <div class="mt-8 pt-6 border-t border-zinc-800 text-center">
+                <p class="text-sm text-zinc-500">
+                    Already have an account? 
+                    <a href="{% url 'accounts:login' %}" class="text-teal-500 hover:text-teal-400 font-medium transition-colors ml-1">
+                        Sign in
+                    </a>
+                </p>
             </div>
         </div>
     </div>

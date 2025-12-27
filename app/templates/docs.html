@@ -1,192 +1,176 @@
-{% extends "base.html" %}
+{% extends "base_public.html" %}
 {% block title %}Documentation - VULNRIX{% endblock %}
 
 {% block content %}
-<div class="container mx-auto max-w-6xl pb-10">
+<div class="w-full max-w-7xl mx-auto px-6 py-12 pb-24">
     <!-- Hero Header -->
-    <div class="text-center mb-12 py-10 bg-gradient-to-b from-primary/5 to-transparent rounded-3xl border border-primary/10">
-        <div class="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/20">
-            <i class="fas fa-book-open text-3xl text-primary"></i>
+    <div class="text-center mb-16 py-12 bg-zinc-900/50 rounded-3xl border border-zinc-800 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-teal-500/5 to-transparent pointer-events-none"></div>
+        <div class="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-black/50 border border-zinc-700">
+            <i class="fas fa-book text-3xl text-teal-500"></i>
         </div>
-        <h1 class="text-4xl font-bold tracking-tight mb-4">Documentation</h1>
-        <p class="text-lg text-muted max-w-2xl mx-auto">Everything you need to know about VULNRIX Security Platform. Explore features, scanners, and integrated APIs.</p>
+        <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">Documentation</h1>
+        <p class="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+            Master the VULNRIX Platform. Learn how to secure your <strong>Code Repositories</strong> and monitor your <strong>Digital Footprint</strong>.
+        </p>
     </div>
 
     <!-- Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <a href="{% url 'scanner:new_scan' %}" class="card hover:border-primary/50 transition-all hover:-translate-y-1 group">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        <a href="{% url 'vuln_scan:dashboard' %}" class="group bg-zinc-900 border border-zinc-800 p-6 rounded-xl hover:border-teal-500/50 transition-all hover:-translate-y-1">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <i class="fas fa-search text-xl"></i>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-lg">OSINT Scan</h3>
-                    <p class="text-sm text-muted">Digital footprint analysis</p>
-                </div>
-                <i class="fas fa-arrow-right ml-auto text-muted group-hover:text-primary transition-colors"></i>
-            </div>
-        </a>
-        <a href="{% url 'vuln_scan:dashboard' %}" class="card hover:border-primary/50 transition-all hover:-translate-y-1 group">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-500 group-hover:bg-teal-500 group-hover:text-black transition-colors">
                     <i class="fas fa-code text-xl"></i>
                 </div>
                 <div>
-                    <h3 class="font-semibold text-lg">Code Analysis</h3>
-                    <p class="text-sm text-muted">Static SAST scanner</p>
+                    <h3 class="font-bold text-lg text-white">Code Scanner</h3>
+                    <p class="text-sm text-zinc-400">SAST & Secret Detection</p>
                 </div>
-                <i class="fas fa-arrow-right ml-auto text-muted group-hover:text-primary transition-colors"></i>
+                <i class="fas fa-arrow-right ml-auto text-zinc-600 group-hover:text-teal-500 transition-colors"></i>
             </div>
         </a>
-        <a href="{% url 'vuln_scan:virustotal' %}" class="card hover:border-primary/50 transition-all hover:-translate-y-1 group">
+        <a href="{% url 'scanner:new_scan' %}" class="group bg-zinc-900 border border-zinc-800 p-6 rounded-xl hover:border-zinc-600 transition-all hover:-translate-y-1">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:bg-white group-hover:text-black transition-colors">
+                    <i class="fas fa-globe text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-white">OSINT Scan</h3>
+                    <p class="text-sm text-zinc-400">Footprint Analysis</p>
+                </div>
+                <i class="fas fa-arrow-right ml-auto text-zinc-600 group-hover:text-white transition-colors"></i>
+            </div>
+        </a>
+        <a href="{% url 'vuln_scan:virustotal' %}" class="group bg-zinc-900 border border-zinc-800 p-6 rounded-xl hover:border-zinc-600 transition-all hover:-translate-y-1">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:bg-white group-hover:text-black transition-colors">
                     <i class="fas fa-shield-virus text-xl"></i>
                 </div>
                 <div>
-                    <h3 class="font-semibold text-lg">Malware Scan</h3>
-                    <p class="text-sm text-muted">VirusTotal integration</p>
+                    <h3 class="font-bold text-lg text-white">Malware Check</h3>
+                    <p class="text-sm text-zinc-400">VirusTotal Integration</p>
                 </div>
-                <i class="fas fa-arrow-right ml-auto text-muted group-hover:text-primary transition-colors"></i>
+                <i class="fas fa-arrow-right ml-auto text-zinc-600 group-hover:text-white transition-colors"></i>
             </div>
         </a>
     </div>
 
-    <!-- Features Grid -->
-    <div class="mb-12">
-        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-            <i class="fas fa-user-secret text-primary"></i> OSINT Capabilities
+    <!-- Code Scanner Section (Prioritized) -->
+    <div class="mb-20">
+        <h2 class="text-3xl font-bold mb-8 flex items-center gap-3 text-white">
+            <i class="fas fa-code text-teal-500"></i> Code Vulnerability Scanner
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="card p-6">
-                <div class="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-primary mb-4">
-                    <i class="fas fa-envelope"></i>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+             <div class="bg-zinc-900 p-8 rounded-xl border border-zinc-800">
+                <h3 class="text-xl font-bold text-white mb-4">Static Analysis (SAST)</h3>
+                <p class="text-zinc-400 mb-6 leading-relaxed">
+                    VULNRIX uses advanced pattern matching and AST analysis to detect security flaws in your source code without executing it. 
+                    We support <span class="text-white font-medium">15+ languages</span> including Python, JavaScript, Go, and C/C++.
+                </p>
+                <div class="flex flex-wrap gap-2">
+                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">SQL Injection</span>
+                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">XSS</span>
+                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">Hardcoded Secrets</span>
+                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">Insecure Config</span>
                 </div>
-                <h4 class="font-semibold mb-2">Email Breach Check</h4>
-                <p class="text-sm text-gray-300">Search multiple breach databases to find if an email has been compromised. Includes HaveIBeenPwned & LeakInsight.</p>
             </div>
-            <div class="card p-6">
-                <div class="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-primary mb-4">
-                    <i class="fas fa-user"></i>
-                </div>
-                <h4 class="font-semibold mb-2">Username Search</h4>
-                <p class="text-sm text-gray-300">Find accounts across 100+ social platforms. Discover digital footprints and online presence.</p>
-            </div>
-            <div class="card p-6">
-                <div class="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-primary mb-4">
-                    <i class="fas fa-network-wired"></i>
-                </div>
-                <h4 class="font-semibold mb-2">IP Intelligence</h4>
-                <p class="text-sm text-gray-300">Get geolocation, ISP info, open ports, and threat intelligence using Shodan and PulseDive.</p>
-            </div>
-            <div class="card p-6">
-                <div class="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-primary mb-4">
-                    <i class="fas fa-globe"></i>
-                </div>
-                <h4 class="font-semibold mb-2">Domain Analysis</h4>
-                <p class="text-sm text-gray-300">WHOIS lookup, DNS records, SSL certificates, and security headers analysis.</p>
-            </div>
-            <div class="card p-6">
-                <div class="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-primary mb-4">
-                    <i class="fas fa-phone"></i>
-                </div>
-                <h4 class="font-semibold mb-2">Phone Lookup</h4>
-                <p class="text-sm text-gray-300">Carrier information, line type, and location data using Veriphone and NumLookup APIs.</p>
-            </div>
-            <div class="card p-6">
-                <div class="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-primary mb-4">
-                    <i class="fas fa-mask"></i>
-                </div>
-                <h4 class="font-semibold mb-2">Dark Web Scan</h4>
-                <p class="text-sm text-muted">Search paste sites and dark web sources for leaked credentials and mentions.</p>
+
+            <div class="bg-zinc-900 p-8 rounded-xl border border-zinc-800">
+                <h3 class="text-xl font-bold text-white mb-4">Repository & Project Scanning</h3>
+                <p class="text-zinc-400 mb-6 leading-relaxed">
+                    Scan entire projects by uploading a <strong>ZIP archive</strong> or connecting a <strong>Git Repository</strong>. 
+                    VULNRIX decomposes the project, analyzes each file, and aggregates the results into a comprehensive security report.
+                </p>
+                <ul class="space-y-3">
+                    <li class="flex items-center gap-3 text-sm text-zinc-300">
+                        <i class="fas fa-check text-teal-500"></i> Deep Dependency Analysis
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-zinc-300">
+                        <i class="fas fa-check text-teal-500"></i> Zip-Slip Protection
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-zinc-300">
+                        <i class="fas fa-check text-teal-500"></i> Multi-file Context
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
 
-    <!-- Code Scanner Section -->
-    <div class="mb-12">
-        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-            <i class="fas fa-code text-primary"></i> Vulnerability Scanner Modes
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="card p-6 border-l-4 border-l-green-500">
+        <h3 class="text-xl font-bold text-white mb-6 px-2">Analysis Modes</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800 border-l-4 border-l-green-500">
                 <div class="flex items-center gap-2 mb-3">
                     <i class="fas fa-bolt text-green-500"></i>
-                    <h3 class="font-bold">Fast Mode</h3>
+                    <h3 class="font-bold text-white">Fast Mode</h3>
                 </div>
-                <p class="text-sm text-muted">Local semantic analysis only. Instant results using pattern matching and regex engines.</p>
+                <p class="text-sm text-zinc-400">Local semantic analysis only. Instant results using high-performance regex engines.</p>
             </div>
-            <div class="card p-6 border-l-4 border-l-primary">
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800 border-l-4 border-l-teal-500">
                 <div class="flex items-center gap-2 mb-3">
-                    <i class="fas fa-balance-scale text-primary"></i>
-                    <h3 class="font-bold">Hybrid Mode</h3>
+                    <i class="fas fa-balance-scale text-teal-500"></i>
+                    <h3 class="font-bold text-white">Hybrid Mode</h3>
                 </div>
-                <p class="text-sm text-muted">Combines local analysis with lightweight AI verification for balanced speed and accuracy.</p>
+                <p class="text-sm text-zinc-400">Combines local analysis with lightweight AI verification for balanced speed and accuracy.</p>
             </div>
-            <div class="card p-6 border-l-4 border-l-purple-500">
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800 border-l-4 border-l-purple-500">
                 <div class="flex items-center gap-2 mb-3">
                     <i class="fas fa-brain text-purple-500"></i>
-                    <h3 class="font-bold">Deep AI Mode</h3>
+                    <h3 class="font-bold text-white">Deep AI Mode</h3>
                 </div>
-                <p class="text-sm text-muted">Full AI-powered analysis for comprehensive vulnerability detection and complex logic flaws.</p>
-            </div>
-        </div>
-        
-        <div class="card p-6">
-            <h4 class="font-semibold mb-4 text-sm uppercase tracking-wide text-muted">Supported Languages</h4>
-            <div class="flex flex-wrap gap-2">
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Python</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">JavaScript</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">TypeScript</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Java</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">C/C++</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Go</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Rust</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">PHP</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Ruby</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">C#</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Swift</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Kotlin</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">SQL</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium border border-border">Shell</span>
-                <span class="px-3 py-1.5 rounded-lg bg-secondary text secondary-foregeound text-sm font-medium border border-border">& many more...</span>
+                <p class="text-sm text-zinc-400">Full LLM-powered analysis for comprehensive vulnerability detection and complex logic flaws.</p>
             </div>
         </div>
     </div>
 
-    <!-- API Status -->
-    <div class="card p-8">
-        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-            <i class="fas fa-plug text-primary"></i> Integrated Engines
+    <!-- OSINT Section -->
+    <div class="mb-12">
+        <h2 class="text-2xl font-bold mb-8 flex items-center gap-3 text-white">
+            <i class="fas fa-globe text-zinc-400"></i> OSINT Capabilities
         </h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">Google Search</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">Email Breach Check</h4>
+                <p class="text-sm text-zinc-400">Search multiple breach databases (HIBP, LeakInsight) to find if an email has been compromised.</p>
             </div>
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">IntelX</span>
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">Username Search</h4>
+                <p class="text-sm text-zinc-400">Find accounts across 100+ social platforms to discover digital footprints.</p>
             </div>
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">Shodan</span>
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+                    <i class="fas fa-network-wired"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">IP Intelligence</h4>
+                <p class="text-sm text-zinc-400">Get geolocation, ISP info, open ports, and threat intelligence via Shodan.</p>
             </div>
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">VirusTotal</span>
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">Domain Analysis</h4>
+                <p class="text-sm text-zinc-400">WHOIS lookup, DNS records, and SSL certificate security checks.</p>
             </div>
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">WhoisFreaks</span>
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">Phone Lookup</h4>
+                <p class="text-sm text-zinc-400">Carrier information and location data using Veriphone APIs.</p>
             </div>
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">PulseDive</span>
-            </div>
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">Groq AI</span>
-            </div>
-            <div class="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
-                <i class="fas fa-check-circle text-success text-sm"></i> <span class="text-sm font-medium">Snyk</span>
+            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+                    <i class="fas fa-mask"></i>
+                </div>
+                <h4 class="font-bold text-white mb-2">Dark Web Scan</h4>
+                <p class="text-sm text-zinc-400">Search paste sites for leaked credentials and mentions.</p>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
-
-

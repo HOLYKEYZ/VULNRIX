@@ -116,10 +116,12 @@
 
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <a href="{% url 'scanner:dashboard' %}" class="sidebar-brand">
+        <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-brand relative">
             <img src="{% static 'favicon.svg' %}" alt="VULNRIX" class="w-7 h-7">
             <span style="color: #00d4d4;">VULNRIX</span>
         </a>
+        <!-- Teal Gradient Accent Bar -->
+        <div class="w-full h-0.5 bg-gradient-to-r from-teal-500 via-teal-400 to-transparent mb-4"></div>
         
         <div class="flex-col gap-4 relative">
             <!-- Mobile Close Button -->
@@ -128,41 +130,46 @@
             </button>
 
             <div class="sidebar-section mt-8 md:mt-0">
-                <div class="sidebar-section-title">Platform</div>
-                <a href="{% url 'scanner:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' or request.path == '/vuln/' %}active{% endif %}">
-                    <i class="fas fa-home w-4"></i> Dashboard
-                </a>
-                <a href="{% url 'scanner:docs' %}" class="sidebar-link {% if 'docs' in request.path %}active{% endif %}">
-                    <i class="fas fa-book w-4"></i> Documentation
+                <div class="sidebar-section-title">MAIN</div>
+                <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-link {% if request.resolver_match.app_name == 'vuln_scan' and 'virustotal' not in request.path %}active{% endif %}">
+                    <i class="fas fa-shield-alt w-4"></i> Dashboard
                 </a>
             </div>
 
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Intelligence</div>
+                <div class="sidebar-section-title">OSINT SCANNER</div>
                 <a href="{% url 'scanner:new_scan' %}" class="sidebar-link {% if 'scan/new' in request.path %}active{% endif %}">
                     <i class="fas fa-search w-4"></i> New OSINT Scan
                 </a>
-                <a href="{% url 'scanner:dashboard' %}#history" class="sidebar-link">
-                    <i class="fas fa-history w-4"></i> Scan History
+                <a href="{% url 'scanner:dashboard' %}" class="sidebar-link {% if 'footprint' in request.path %}active{% endif %}">
+                    <i class="fas fa-globe w-4"></i> Digital Footprint
                 </a>
             </div>
 
             <div class="sidebar-section">
-                <div class="sidebar-section-title flex justify-between items-center">
-                    <span>Dev Tools</span>
-                    <span class="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-mono">&lt;/&gt;</span>
-                </div>
-                <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-link {% if 'vuln' in request.path and 'virustotal' not in request.path %}active{% endif %}">
-                    <i class="fas fa-code w-4"></i> Code & File Scanner
+                <div class="sidebar-section-title">DEV TOOLS</div>
+                <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-link">
+                    <i class="fas fa-code w-4"></i> Code Scanner
+                </a>
+                <a href="{% url 'vuln_scan:dashboard' %}#view-repo" class="sidebar-link">
+                    <i class="fab fa-github w-4"></i> New Repo Scan
                 </a>
                 <a href="{% url 'vuln_scan:virustotal' %}" class="sidebar-link {% if 'virustotal' in request.path %}active{% endif %}">
-                    <i class="fas fa-virus w-4"></i> VirusTotal Engine
+                    <i class="fas fa-virus w-4"></i> VirusTotal Check
                 </a>
             </div>
 
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Settings</div>
+                <div class="sidebar-section-title">HISTORY</div>
+                <a href="{% url 'scanner:dashboard' %}#history" class="sidebar-link">
+                    <i class="fas fa-history w-4"></i> OSINT History
+                </a>
+                <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-link">
+                    <i class="fas fa-file-code w-4"></i> Vuln History
+                </a>
+            </div>
 
+            <div class="sidebar-section">
                 <a href="{% url 'accounts:logout' %}" class="sidebar-link text-destructive">
                     <i class="fas fa-sign-out-alt w-4"></i> Logout
                 </a>
@@ -172,6 +179,9 @@
 
     <!-- Main Content Wrapper (App) -->
     <main class="main-content">
+        <!-- Teal Gradient Accent Bar -->
+        <div class="w-full h-0.5 bg-gradient-to-r from-teal-500 via-teal-400/50 to-transparent mb-6"></div>
+        
         {% if messages %}
         <div class="mb-6 w-full max-w-4xl mx-auto">
             {% for message in messages %}

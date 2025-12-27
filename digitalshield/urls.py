@@ -15,9 +15,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home, name='home'),
     path('docs/', docs, name='docs'),
-    path('dashboard/', include('scanner.urls')),
+    
+    # Dashboard Architecture Swap
+    path('dashboard/', include('vuln_scan.web_dashboard.urls')), # Main Dashboard = Code Scanner
+    path('dashboard/footprint/', include('scanner.urls')),       # Sub-Dashboard = OSINT
+    
     path('accounts/', include('accounts.urls')),
-    path('vuln/', include('vuln_scan.web_dashboard.urls')),
     path('vuln-node/', include('vuln_scan.nodes.urls')),
     # REST API v1
     path('api/v1/', include('scanner.api.urls')),

@@ -1,145 +1,203 @@
 {% extends 'base_public.html' %}
+{% load static %}
 
-{% block title %}VULNRIX - Advanced Security Intelligence{% endblock %}
+{% block title %}VULNRIX - Security Intelligence Platform{% endblock %}
 
 {% block extra_head %}
-<!-- Neon Effects -->
 <style>
-    .hero-glow {
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.5), 0 0 20px rgba(16, 185, 129, 0.3);
+    /* Premium SaaS Tweaks */
+    .hero-text-gradient {
+        background: linear-gradient(to bottom, #ffffff, #a1a1aa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
-    .scanner-box {
-        background: rgba(10, 10, 10, 0.8);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    
+    .scanner-card {
+        background: rgba(9, 9, 11, 0.6); /* Zinc 950 with opacity */
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(8px);
     }
-    .scanner-box:hover {
-        border-color: rgba(16, 185, 129, 0.5);
-        box-shadow: 0 0 40px rgba(16, 185, 129, 0.1);
+    
+    .feature-icon-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="relative w-full max-w-6xl mx-auto px-4 py-12 flex flex-col items-center">
+<div class="w-full flex flex-col items-center">
     
-    <!-- Top Nav -->
-    <div class="absolute top-0 right-0 p-4 flex gap-4">
-        {% if user.is_authenticated %}
-            <a href="{% url 'vuln_scan:dashboard' %}" class="btn btn--primary">
-                <i class="fas fa-columns mr-2"></i> Dashboard
-            </a>
-        {% else %}
-            <a href="{% url 'accounts:login' %}" class="btn btn--outline">Login</a>
-            <a href="{% url 'accounts:register' %}" class="btn btn--primary">Register</a>
-        {% endif %}
-    </div>
-
-    <!-- Hero Section -->
-    <div class="text-center mb-16 mt-12 animate-fade-in-up">
-        <h1 class="text-5xl md:text-7xl font-bold mb-6 tracking-tight hero-glow relative inline-block">
-            <span class="text-primary relative z-10">VULNRIX</span> <span class="text-foreground relative z-10">SECURITY</span>
-            <div class="absolute -inset-4 bg-primary/20 blur-3xl -z-10 rounded-full opacity-50"></div>
-        </h1>
-        <p class="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            The advanced <strong>Digital Footprint</strong> & <strong>Vulnerability Analysis</strong> platform.
-            <span class="block mt-2 text-foreground font-medium">Secure your code. Monitor your perimeter. Detect threats.</span>
-        </p>
-        
-        <div class="flex flex-wrap justify-center gap-4 text-sm font-medium">
-            <span class="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary shadow-[0_0_15px_rgba(0,212,212,0.2)] hover:shadow-[0_0_25px_rgba(0,212,212,0.4)] transition-all cursor-default">
-                <i class="fas fa-shield-alt"></i> Zero-Config
-            </span>
-            <span class="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] transition-all cursor-default">
-                <i class="fas fa-brain"></i> AI-Enhanced
-            </span>
-            <span class="flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)] hover:shadow-[0_0_25px_rgba(249,115,22,0.4)] transition-all cursor-default">
-                <i class="fab fa-git-alt"></i> Repo Scanning
-            </span>
+    <!-- Navbar (Inline for Welcome Page) -->
+    <nav class="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <img src="{% static 'favicon.svg' %}" alt="VULNRIX Logo" class="w-8 h-8">
+            <span class="font-bold text-lg tracking-tight text-white">VULNRIX</span>
         </div>
-    </div>
-
-    <!-- Demo Scanner -->
-    <div class="w-full max-w-2xl mx-auto scanner-box rounded-xl p-8 transform transition-all duration-300">
-        <div class="text-center mb-6">
-            <h2 class="text-2xl font-bold mb-2">Try functionality Demo</h2>
-            {% if not user.is_authenticated %}
-            <p class="text-sm text-muted-foreground">
-                Guest Limit: <span id="guestCount" class="text-primary font-bold">0</span>/2 Scans
-            </p>
+        <div class="flex items-center gap-4">
+            <a href="{% url 'docs' %}" class="text-sm text-zinc-400 hover:text-teal-400 transition-colors">Documentation</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'vuln_scan:dashboard' %}" class="btn bg-white text-black hover:bg-zinc-200 border-0">
+                    Dashboard
+                </a>
             {% else %}
-            <p class="text-sm text-green-400">Unlimited Access (Logged In)</p>
+                <a href="{% url 'accounts:login' %}" class="text-sm font-medium text-zinc-300 hover:text-white transition-colors">Log in</a>
+                <a href="{% url 'accounts:register' %}" class="btn bg-teal-500 hover:bg-teal-400 text-black border-0 h-9 px-4 text-sm font-bold transition-all shadow-[0_0_15px_rgba(0,212,212,0.3)] hover:shadow-[0_0_25px_rgba(0,212,212,0.5)]">
+                    Sign up
+                </a>
             {% endif %}
         </div>
+    </nav>
 
-        <!-- Upload Zone -->
-        <div id="dropZone" class="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-lg p-10 cursor-pointer bg-background/50 relative overflow-hidden group">
-            <input type="file" id="fileInput" class="hidden">
-            
-            <div class="flex flex-col items-center justify-center pointer-events-none group-hover:scale-105 transition-transform duration-300">
-                <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary text-3xl">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                </div>
-                <h3 class="text-lg font-medium mb-1">Drop file to scan</h3>
-                <p class="text-xs text-muted-foreground">Supported: .py, .js, .php, .go, .java, .c</p>
+    <!-- Hero Section -->
+    <div class="w-full max-w-5xl mx-auto px-4 mt-20 mb-20 text-center animate-fade-in-up">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-mono mb-6">
+            <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+            V2.0: ADVANCED CODE SECURITY
+        </div>
+        
+        <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-8 text-white leading-[1.1]">
+            Code Security &<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">Attack Surface Defense.</span>
+        </h1>
+        <p class="text-xl text-zinc-400 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+            The all-in-one platform for <strong>Static Analysis (SAST)</strong>, <strong>Repository Scanning</strong>, and 
+            <strong>Digital Footprint Monitoring</strong>. built for modern devsecops.
+        </p>
+        
+        <div class="flex items-center justify-center gap-4">
+            <button onclick="scrollToScanner()" class="btn bg-white text-black hover:bg-zinc-200 border-0 h-12 px-8 text-base font-bold rounded-full shadow-lg shadow-white/5">
+                Start Free Scan
+            </button>
+            <a href="{% url 'docs' %}" class="btn bg-transparent border border-zinc-700 text-zinc-300 hover:border-teal-500/50 hover:text-teal-400 h-12 px-8 text-base font-medium rounded-full transition-all">
+                View Documentation
+            </a>
+        </div>
+    </div>
+    
+    <!-- Feature Grid -->
+    <div class="w-full max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+        <div class="flex flex-col items-start gap-4">
+            <div class="w-10 h-10 rounded-lg feature-icon-box flex items-center justify-center text-zinc-200">
+                <i class="fas fa-shield-alt"></i>
             </div>
-            
-            <!-- Loading Overlay -->
-            <div id="scanLoading" class="absolute inset-0 bg-background/90 z-20 hidden flex-col items-center justify-center backdrop-blur-sm">
-                <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p class="text-primary font-mono animate-pulse">ANALYZING...</p>
+            <div>
+                <h3 class="text-lg font-semibold text-zinc-100 mb-2">Zero Configuration</h3>
+                <p class="text-sm text-zinc-500 leading-relaxed">
+                    Instant analysis for common languages. No setup files or complex pipelines required.
+                </p>
             </div>
         </div>
+        <div class="flex flex-col items-start gap-4">
+            <div class="w-10 h-10 rounded-lg feature-icon-box flex items-center justify-center text-zinc-200">
+                <i class="fas fa-microchip"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-zinc-100 mb-2">Deep Analysis</h3>
+                <p class="text-sm text-zinc-500 leading-relaxed">
+                    Pattern matching combined with intelligent heuristics to reduce false positives.
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col items-start gap-4">
+            <div class="w-10 h-10 rounded-lg feature-icon-box flex items-center justify-center text-zinc-200">
+                <i class="fab fa-git-alt"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-zinc-100 mb-2">Repo Integration</h3>
+                <p class="text-sm text-zinc-500 leading-relaxed">
+                    Connect public repositories or upload ZIP archives for comprehensive project scanning.
+                </p>
+            </div>
+        </div>
+    </div>
 
-        <!-- Result Area -->
-        <div id="scanResult" class="mt-6 hidden animate-fade-in-up">
-            <div class="bg-card border border-border rounded-lg p-4">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h4 class="font-bold text-lg" id="resultFilename">file.py</h4>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span id="resultSeverity" class="badge">HIGH</span>
-                            <span class="text-xs text-muted">Risk Score: <span id="resultScore">85</span>/100</span>
-                        </div>
+    <!-- Scanner Section -->
+    <div id="scannerSection" class="w-full max-w-2xl mx-auto px-4 mb-32">
+        <div class="scanner-card rounded-xl p-1 shadow-2xl shadow-black/50">
+            <div class="bg-zinc-950/80 rounded-lg p-8 border border-white/5">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-zinc-200 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                        Live Scanner
+                    </h2>
+                    {% if not user.is_authenticated %}
+                        <span class="text-xs font-mono text-zinc-500 bg-zinc-900 border border-zinc-800 px-2 py-1 rounded">
+                            GUEST: <span id="guestCount" class="text-zinc-300">0</span>/2
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Dropzone -->
+                <div id="dropZone" class="border border-dashed border-zinc-700 hover:border-zinc-500 hover:bg-zinc-900/50 transition-all rounded-lg h-48 flex flex-col items-center justify-center cursor-pointer group relative overflow-hidden">
+                    <input type="file" id="fileInput" class="hidden">
+                    
+                    <div class="flex flex-col items-center text-center p-6 transition-transform duration-300 group-hover:scale-105">
+                        <i class="fas fa-arrow-up-from-bracket text-2xl text-zinc-500 mb-4 group-hover:text-white transition-colors"></i>
+                        <p class="text-sm font-medium text-zinc-300 mb-1">Drop source file to scan</p>
+                        <p class="text-xs text-zinc-500 font-mono">.py, .js, .go, .c, .php</p>
                     </div>
-                    <button onclick="resetScanner()" class="text-xs text-muted hover:text-foreground">
-                        <i class="fas fa-times"></i> Close
-                    </button>
+
+                    <!-- Loading State -->
+                    <div id="scanLoading" class="absolute inset-0 bg-zinc-950 z-20 hidden flex flex-col items-center justify-center">
+                        <div class="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin mb-3"></div>
+                        <p class="text-xs text-zinc-400 font-mono tracking-wider">ANALYZING...</p>
+                    </div>
                 </div>
-                
-                <div id="resultFindings" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-                    <!-- Dynamic findings -->
+
+                <!-- Results -->
+                <div id="scanResult" class="mt-6 hidden border-t border-zinc-800 pt-6 animate-fade-in-up">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <i class="far fa-file-code text-zinc-400"></i>
+                                <h4 class="font-medium text-zinc-200 text-sm" id="resultFilename">file.py</h4>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="text-zinc-500">Risk Score:</span>
+                                <span id="resultScore" class="font-mono text-zinc-300">0</span>
+                                <span class="text-zinc-700">|</span>
+                                <span id="resultSeverity" class="font-bold">SAFE</span>
+                            </div>
+                        </div>
+                        <button onclick="resetScanner()" class="text-xs text-zinc-500 hover:text-white transition-colors">
+                            Clear
+                        </button>
+                    </div>
+                    
+                    <div id="resultFindings" class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                        <!-- Dynamic findings -->
+                    </div>
+
+                    {% if not user.is_authenticated %}
+                    <div class="mt-6 pt-4 border-t border-dashed border-zinc-800 text-center">
+                        <a href="{% url 'accounts:register' %}" class="text-xs text-teal-500 hover:text-teal-400 font-medium transition-colors">
+                            Create free account for full report &rarr;
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-                
-                {% if not user.is_authenticated %}
-                <div class="mt-4 pt-4 border-t border-border text-center">
-                    <a href="{% url 'accounts:register' %}" class="text-xs text-primary hover:underline">
-                        Create account for full report & history &rarr;
-                    </a>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
     
-    <!-- Login Modal (Hidden) -->
-    <div id="limitModal" class="fixed inset-0 z-50 bg-black/80 hidden items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-card w-full max-w-md p-8 rounded-xl border border-primary/30 shadow-2xl relative scanner-box">
-            <button onclick="closeLimitModal()" class="absolute top-4 right-4 text-muted hover:text-foreground">
+    <!-- Login Modal -->
+    <div id="limitModal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-zinc-900 w-full max-w-sm p-6 rounded-xl border border-zinc-800 shadow-2xl relative">
+            <button onclick="closeLimitModal()" class="absolute top-4 right-4 text-zinc-500 hover:text-white">
                 <i class="fas fa-times"></i>
             </button>
             <div class="text-center">
-                <div class="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                <div class="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-200">
                     <i class="fas fa-lock"></i>
                 </div>
-                <h3 class="text-2xl font-bold mb-2">Guest Limit Reached</h3>
-                <p class="text-muted-foreground mb-8">
-                    You've used your 2 free demo scans. Create a free account to continue scanning with unlimited access, history tracking, and advanced AI features.
+                <h3 class="text-lg font-semibold text-white mb-2">Limit Reached</h3>
+                <p class="text-sm text-zinc-400 mb-6">
+                    You've used your guest scans. Sign up for free to continue.
                 </p>
-                <div class="grid gap-3">
-                    <a href="{% url 'accounts:register' %}" class="btn btn--primary w-full py-3">Create Free Account</a>
-                    <a href="{% url 'accounts:login' %}" class="btn btn--outline w-full py-3">Login</a>
+                <div class="gap-3 flex flex-col">
+                    <a href="{% url 'accounts:register' %}" class="btn bg-white text-black hover:bg-zinc-200 border-0 w-full justify-center">Create Free Account</a>
+                    <a href="{% url 'accounts:login' %}" class="btn bg-transparent border border-zinc-700 text-white w-full justify-center">Log in</a>
                 </div>
             </div>
         </div>
@@ -156,18 +214,21 @@
     const guestCountSpan = document.getElementById('guestCount');
     
     const IS_LOGGED_IN = {{ user.is_authenticated|yesno:"true,false" }};
-    let guestScans = 0; // Will be synced with server response
+    let guestScans = 0;
 
-    // Drag & Drop
+    function scrollToScanner() {
+        document.getElementById('scannerSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
     dropZone.addEventListener('click', () => fileInput.click());
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.classList.add('border-primary');
+        dropZone.classList.add('border-zinc-500', 'bg-zinc-900');
     });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-primary'));
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-zinc-500', 'bg-zinc-900'));
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
-        dropZone.classList.remove('border-primary');
+        dropZone.classList.remove('border-zinc-500', 'bg-zinc-900');
         if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
     });
     fileInput.addEventListener('change', (e) => {
@@ -179,12 +240,10 @@
             limitModal.style.display = 'flex';
             return;
         }
-        
         uploadFile(file);
     }
 
     async function uploadFile(file) {
-        // Show Loading
         scanLoading.classList.remove('hidden');
         scanResult.classList.add('hidden');
         
@@ -197,13 +256,6 @@
                 method: 'POST',
                 body: formData
             });
-            
-            // Check content type for JSON vs HTML error
-            const contentType = res.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                 throw new Error("Server error (Invalid Response)");
-            }
-
             const data = await res.json();
             
             if(data.error) {
@@ -215,10 +267,7 @@
                 return;
             }
 
-            // Update UI
             showResult(data, file.name);
-            
-            // Update limit count from server
             if(data.guest_scans !== undefined) {
                 guestScans = data.guest_scans;
                 if(guestCountSpan) guestCountSpan.textContent = guestScans;
@@ -226,10 +275,10 @@
 
         } catch(e) {
             console.error(e);
-            alert('Scan failed. Please try again.');
+            alert('Scan failed.');
         } finally {
             scanLoading.classList.add('hidden');
-            fileInput.value = ''; // Reset input
+            fileInput.value = '';
         }
     }
 
@@ -242,39 +291,49 @@
         let color = 'text-green-500';
         
         if(data.findings && data.findings.length > 0) {
-            // Determine max severity
             const sevs = data.findings.map(f => f.severity.toUpperCase());
-            if(sevs.includes('CRITICAL')) { sev='CRITICAL'; color='text-red-600'; }
+            if(sevs.includes('CRITICAL')) { sev='CRITICAL'; color='text-red-500'; }
             else if(sevs.includes('HIGH')) { sev='HIGH'; color='text-red-500'; }
-            else if(sevs.includes('MEDIUM')) { sev='MEDIUM'; color='text-yellow-500'; }
+            else if(sevs.includes('MEDIUM')) { sev='MEDIUM'; color='text-amber-500'; } // Amber for Zinc theme
             else { sev='LOW'; color='text-blue-500'; }
         }
         
         sevSpan.textContent = sev;
-        sevSpan.className = `badge font-bold ${color} border border-current bg-transparent px-2 py-0.5 rounded text-xs`;
+        sevSpan.className = `font-bold ${color} text-xs ml-2`;
         
-        // Findings List
         const container = document.getElementById('resultFindings');
         container.innerHTML = '';
         
         if(data.findings && data.findings.length) {
             data.findings.forEach(f => {
                 const div = document.createElement('div');
-                div.className = 'text-sm p-2 bg-muted/20 rounded border-l-2 custom-border';
-                div.style.borderLeftColor = f.severity === 'HIGH' ? '#ef4444' : (f.severity === 'MEDIUM' ? '#eab308' : '#22c55e');
+                div.className = 'group p-3 hover:bg-zinc-900 rounded border border-transparent hover:border-zinc-800 transition-colors cursor-default';
+                
+                const indicatorColor = f.severity === 'HIGH' ? 'bg-red-500' : (f.severity === 'MEDIUM' ? 'bg-amber-500' : 'bg-green-500');
+                
                 div.innerHTML = `
-                    <div class="flex justify-between">
-                        <span class="font-bold text-xs uppercase opacity-80">${f.type || 'Issue'}</span>
-                        <span class="text-xs text-muted">Ln ${f.line}</span>
+                    <div class="flex items-start gap-3">
+                        <div class="w-1.5 h-1.5 rounded-full ${indicatorColor} mt-1.5 flex-shrink-0"></div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium text-zinc-200 text-xs">${f.type || 'Issue'}</span>
+                                <span class="font-mono text-[10px] text-zinc-600">L${f.line}</span>
+                            </div>
+                            <p class="text-xs text-zinc-400 leading-relaxed">${f.description || f.reason}</p>
+                        </div>
                     </div>
-                    <p class="mt-1">${f.description || f.reason}</p>
                 `;
                 container.appendChild(div);
             });
         } else {
-            container.innerHTML = `<div class="text-center text-green-500 py-4"><i class="fas fa-check-circle text-2xl mb-2"></i><p>No vulnerabilities found!</p></div>`;
+            container.innerHTML = `
+                <div class="text-center py-6">
+                    <div class="w-8 h-8 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-check text-xs"></i>
+                    </div>
+                    <p class="text-xs text-zinc-500">No issues detected.</p>
+                </div>`;
         }
-        
         scanResult.classList.remove('hidden');
     }
 
