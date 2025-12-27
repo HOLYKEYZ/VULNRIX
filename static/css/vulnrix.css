@@ -93,6 +93,10 @@ html {
 
 body {
     background-color: hsl(var(--background));
+    /* Subtle Ambient Gradient */
+    background-image: radial-gradient(circle at 10% 20%, rgba(0, 212, 212, 0.05), transparent 40%),
+                      radial-gradient(circle at 90% 80%, rgba(0, 212, 212, 0.02), transparent 40%);
+    background-attachment: fixed;
     color: hsl(var(--foreground));
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -171,28 +175,24 @@ code, pre {
     align-items: center;
     justify-content: center;
     border-radius: var(--radius);
-    padding: 0 1rem;
-    height: 2.5rem;
-    font-size: 0.875rem;
     font-weight: 500;
-    transition: colors 0.15s ease-in-out;
+    transition: all 0.2s;
     cursor: pointer;
-    border: 1px solid transparent; /* default */
     text-decoration: none;
+    height: 2.5rem;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    border: none;
+    outline: none;
     white-space: nowrap;
 }
+.btn:active { transform: translateY(1px); }
 
 .btn--primary {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
-    box-shadow: 0 0 15px hsla(var(--primary), 0.3);
-    transition: all 0.2s ease-in-out;
 }
-.btn--primary:hover {
-    opacity: 0.95;
-    box-shadow: 0 0 25px hsla(var(--primary), 0.5);
-    transform: translateY(-1px);
-}
+.btn--primary:hover { opacity: 0.9; }
 
 .btn--secondary {
     background-color: hsl(var(--secondary));
@@ -222,12 +222,14 @@ code, pre {
 
 /* Cards */
 .card {
-    border-radius: var(--radius); /* 0.5rem normally, shadcn uses 0.5 for small, XL for larger */
+    border-radius: var(--radius);
     border: 1px solid hsl(var(--border));
     background-color: hsl(var(--card));
     color: hsl(var(--card-foreground));
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* very subtle shadow */
     padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
 }
 
 /* Inputs */
@@ -612,11 +614,8 @@ tr:hover { background-color: hsl(var(--muted) / 0.5); }
 
 [data-theme="dark"] .sidebar-link.active,
 .dark .sidebar-link.active {
-    color: #ffffff !important;
-    background: linear-gradient(90deg, rgba(0, 212, 212, 0.25) 0%, rgba(0, 212, 212, 0.05) 70%, transparent 100%) !important;
-    border-left: 3px solid #00d4d4;
-    padding-left: calc(0.75rem - 3px);
-    font-weight: 500;
+    color: #00d4d4 !important;
+    background-color: rgba(0, 212, 212, 0.1) !important;
 }
 
 /* Teal Brand Accent Classes */
