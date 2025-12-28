@@ -93,16 +93,19 @@ html {
 
 body {
     background-color: hsl(var(--background));
-    /* Subtle Ambient Gradient */
-    background-image: radial-gradient(circle at 10% 20%, rgba(0, 212, 212, 0.05), transparent 40%),
-                      radial-gradient(circle at 90% 80%, rgba(0, 212, 212, 0.02), transparent 40%);
+    /* Visible Ambient Gradient - Teal/Greenish Glow */
+    background-image: 
+        radial-gradient(circle at 15% 15%, rgba(0, 212, 212, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(0, 212, 212, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 50% 0%, rgba(0, 212, 212, 0.1) 0%, transparent 60%);
     background-attachment: fixed;
+    background-size: cover;
     color: hsl(var(--foreground));
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
-    min-height: 100%;
+    min-height: 100vh;
     line-height: 1.5;
     font-size: 14px;
 }
