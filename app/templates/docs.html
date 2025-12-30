@@ -1,175 +1,186 @@
 {% extends "base.html" %}
-{% block title %}Documentation - VULNRIX{% endblock %}
+{% block title %}Documentation - VULNRIX AI Code Security{% endblock %}
+
+{% block meta_description %}Technical documentation for Vulnrix Hybrid Analysis Engine. Learn about our AST parsing, LLM verification pipeline, and how to integrate with GitHub/GitLab CI/CD.{% endblock %}
 
 {% block content %}
 <div class="w-full max-w-7xl mx-auto px-6 py-12 pb-24">
-    <!-- Hero Header -->
-    <div class="text-center mb-16 py-12 bg-zinc-900/50 rounded-3xl border border-zinc-800 relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-teal-500/5 to-transparent pointer-events-none"></div>
-        <div class="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-black/50 border border-zinc-700">
-            <i class="fas fa-book text-3xl text-teal-500"></i>
-        </div>
-        <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">Documentation</h1>
-        <p class="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Master the VULNRIX Platform. Learn how to secure your <strong>Code Repositories</strong> and monitor your <strong>Digital Footprint</strong>.
+    
+    <!-- Docs Header -->
+    <div class="mb-16 text-center max-w-3xl mx-auto">
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-6">Documentation & Architecture</h1>
+        <p class="text-xl text-zinc-400">
+            Technical overview of the Vulnrix Hybrid Analysis Engine, scanning pipeline, and integration capabilities.
         </p>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-        <a href="{% url 'vuln_scan:dashboard' %}" class="group bg-zinc-900 border border-zinc-800 p-6 rounded-xl hover:border-teal-500/50 transition-all hover:-translate-y-1">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-500 group-hover:bg-teal-500 group-hover:text-black transition-colors">
-                    <i class="fas fa-code text-xl"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg text-white">Code Scanner</h3>
-                    <p class="text-sm text-zinc-400">SAST & Secret Detection</p>
-                </div>
-                <i class="fas fa-arrow-right ml-auto text-zinc-600 group-hover:text-teal-500 transition-colors"></i>
-            </div>
-        </a>
-        <a href="{% url 'scanner:new_scan' %}" class="group bg-zinc-900 border border-zinc-800 p-6 rounded-xl hover:border-zinc-600 transition-all hover:-translate-y-1">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:bg-white group-hover:text-black transition-colors">
-                    <i class="fas fa-globe text-xl"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg text-white">OSINT Scan</h3>
-                    <p class="text-sm text-zinc-400">Footprint Analysis</p>
-                </div>
-                <i class="fas fa-arrow-right ml-auto text-zinc-600 group-hover:text-white transition-colors"></i>
-            </div>
-        </a>
-        <a href="{% url 'vuln_scan:virustotal' %}" class="group bg-zinc-900 border border-zinc-800 p-6 rounded-xl hover:border-zinc-600 transition-all hover:-translate-y-1">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:bg-white group-hover:text-black transition-colors">
-                    <i class="fas fa-shield-virus text-xl"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg text-white">Malware Check</h3>
-                    <p class="text-sm text-zinc-400">VirusTotal Integration</p>
-                </div>
-                <i class="fas fa-arrow-right ml-auto text-zinc-600 group-hover:text-white transition-colors"></i>
-            </div>
-        </a>
-    </div>
-
-    <!-- Code Scanner Section (Prioritized) -->
-    <div class="mb-20">
-        <h2 class="text-3xl font-bold mb-8 flex items-center gap-3 text-white">
-            <i class="fas fa-code text-teal-500"></i> Code Vulnerability Scanner
-        </h2>
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
         
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-             <div class="bg-zinc-900 p-8 rounded-xl border border-zinc-800">
-                <h3 class="text-xl font-bold text-white mb-4">Static Analysis (SAST)</h3>
-                <p class="text-zinc-400 mb-6 leading-relaxed">
-                    VULNRIX uses advanced pattern matching and AST analysis to detect security flaws in your source code without executing it. 
-                    We support <span class="text-white font-medium">15+ languages</span> including Python, JavaScript, Go, and C/C++.
-                </p>
-                <div class="flex flex-wrap gap-2">
-                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">SQL Injection</span>
-                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">XSS</span>
-                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">Hardcoded Secrets</span>
-                    <span class="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300">Insecure Config</span>
-                </div>
-            </div>
-
-            <div class="bg-zinc-900 p-8 rounded-xl border border-zinc-800">
-                <h3 class="text-xl font-bold text-white mb-4">Repository & Project Scanning</h3>
-                <p class="text-zinc-400 mb-6 leading-relaxed">
-                    Scan entire projects by uploading a <strong>ZIP archive</strong> or connecting a <strong>Git Repository</strong>. 
-                    VULNRIX decomposes the project, analyzes each file, and aggregates the results into a comprehensive security report.
-                </p>
-                <ul class="space-y-3">
-                    <li class="flex items-center gap-3 text-sm text-zinc-300">
-                        <i class="fas fa-check text-teal-500"></i> Deep Dependency Analysis
-                    </li>
-                    <li class="flex items-center gap-3 text-sm text-zinc-300">
-                        <i class="fas fa-check text-teal-500"></i> Zip-Slip Protection
-                    </li>
-                    <li class="flex items-center gap-3 text-sm text-zinc-300">
-                        <i class="fas fa-check text-teal-500"></i> Multi-file Context
-                    </li>
-                </ul>
+        <!-- Sidebar / ToC -->
+        <div class="lg:col-span-3">
+            <div class="sticky top-24 space-y-2 border-l border-zinc-800 pl-4">
+                <a href="#overview" class="block text-sm text-teal-400 font-medium">Overview</a>
+                <a href="#pipeline" class="block text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Analysis Pipeline</a>
+                <a href="#comparison" class="block text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Comparison (vs CodeQL)</a>
+                <a href="#footprint" class="block text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Digital Footprint</a>
+                <a href="#faq" class="block text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Technical FAQ</a>
             </div>
         </div>
 
-        <h3 class="text-xl font-bold text-white mb-6 px-2">Analysis Modes</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800 border-l-4 border-l-green-500">
-                <div class="flex items-center gap-2 mb-3">
-                    <i class="fas fa-bolt text-green-500"></i>
-                    <h3 class="font-bold text-white">Fast Mode</h3>
+        <!-- content -->
+        <div class="lg:col-span-9 space-y-16">
+            
+            <!-- Overview -->
+            <section id="overview" class="scroll-mt-24">
+                <h2 class="text-2xl font-bold text-white mb-4">What is Vulnrix?</h2>
+                <div class="prose prose-invert max-w-none text-zinc-400">
+                    <p class="mb-4">
+                        Vulnrix is an <strong>AI-augmented Static Application Security Testing (SAST) platform</strong> designed to detect 
+                        vulnerabilities in source code that traditional regex-based scanners miss.
+                    </p>
+                    <p>
+                        Unlike purely static tools (like ESLint) or purely dynamic tools (DAST), Vulnrix utilizes a 
+                        <strong>Hybrid Analysis Engine</strong> that first identifies candidate hotspots using AST parsing and pattern matching, 
+                        then verifies them using a context-aware Large Language Model (LLM) to reduce false positives.
+                    </p>
                 </div>
-                <p class="text-sm text-zinc-400">Local semantic analysis only. Instant results using high-performance regex engines.</p>
-            </div>
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800 border-l-4 border-l-teal-500">
-                <div class="flex items-center gap-2 mb-3">
-                    <i class="fas fa-balance-scale text-teal-500"></i>
-                    <h3 class="font-bold text-white">Hybrid Mode</h3>
-                </div>
-                <p class="text-sm text-zinc-400">Combines local analysis with lightweight AI verification for balanced speed and accuracy.</p>
-            </div>
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800 border-l-4 border-l-purple-500">
-                <div class="flex items-center gap-2 mb-3">
-                    <i class="fas fa-brain text-purple-500"></i>
-                    <h3 class="font-bold text-white">Deep AI Mode</h3>
-                </div>
-                <p class="text-sm text-zinc-400">Full LLM-powered analysis for comprehensive vulnerability detection and complex logic flaws.</p>
-            </div>
-        </div>
-    </div>
+            </section>
 
-    <!-- OSINT Section -->
-    <div class="mb-12">
-        <h2 class="text-2xl font-bold mb-8 flex items-center gap-3 text-white">
-            <i class="fas fa-globe text-zinc-400"></i> OSINT Capabilities
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
-                    <i class="fas fa-envelope"></i>
+            <!-- Pipeline -->
+            <section id="pipeline" class="scroll-mt-24">
+                <h2 class="text-2xl font-bold text-white mb-6">The Scanning Pipeline</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg">
+                        <div class="text-teal-500 font-mono text-sm mb-2">STAGE 1</div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Ingestion & Tokenization</h3>
+                        <p class="text-sm text-zinc-400">
+                            Source code is ingested via file upload or Git clone. Files are filtered (e.g., ignoring `node_modules`, `tests`) 
+                            and tokenized to construct an Abstract Syntax Tree (AST) representation.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg">
+                        <div class="text-teal-500 font-mono text-sm mb-2">STAGE 2</div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Heuristic Pattern Matching</h3>
+                        <p class="text-sm text-zinc-400">
+                            The engine runs high-speed regex and structural queries (similar to Semgrep rules) to identify 
+                            potential "hotspots" or dangerous sinks (e.g., `eval()`, SQL concatenation).
+                        </p>
+                    </div>
+
+                    <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg">
+                        <div class="text-teal-500 font-mono text-sm mb-2">STAGE 3</div>
+                        <h3 class="text-lg font-semibold text-white mb-2">AI Verification (Context Window)</h3>
+                        <p class="text-sm text-zinc-400">
+                            Candidate snippets—along with surrounding context (50-100 lines)—are sent to the LLM Analysis Node. 
+                            The model determines if user input can actually reach the sink (Taint Analysis simulation).
+                        </p>
+                    </div>
+
+                    <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg">
+                        <div class="text-teal-500 font-mono text-sm mb-2">STAGE 4</div>
+                        <h3 class="text-lg font-semibold text-white mb-2">Correlation & Reporting</h3>
+                        <p class="text-sm text-zinc-400">
+                            Confirmed findings are aggregated, deduplicated, and mapped to CWE/OWASP categories. 
+                            Digital Footprint results are overlaid to provide external context.
+                        </p>
+                    </div>
                 </div>
-                <h4 class="font-bold text-white mb-2">Email Breach Check</h4>
-                <p class="text-sm text-zinc-400">Search multiple breach databases (HIBP, LeakInsight) to find if an email has been compromised.</p>
-            </div>
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
-                    <i class="fas fa-user"></i>
+            </section>
+
+            <!-- Comparison Table -->
+            <section id="comparison" class="scroll-mt-24">
+                <h2 class="text-2xl font-bold text-white mb-6">Comparison: Vulnrix vs Industry Standard</h2>
+                <div class="overflow-x-auto rounded-lg border border-zinc-800">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-zinc-900 text-zinc-400 font-medium">
+                            <tr>
+                                <th class="p-4 border-b border-zinc-800">Feature</th>
+                                <th class="p-4 border-b border-zinc-800 text-teal-400">Vulnrix (Hybrid)</th>
+                                <th class="p-4 border-b border-zinc-800">CodeQL (Deep SAST)</th>
+                                <th class="p-4 border-b border-zinc-800">Semgrep (Linter)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-800 text-zinc-300">
+                            <tr>
+                                <td class="p-4 font-semibold text-zinc-400">Analysis Method</td>
+                                <td class="p-4">Heuristics + LLM</td>
+                                <td class="p-4">Path Analysis (Datalog)</td>
+                                <td class="p-4">AST Pattern Matching</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4 font-semibold text-zinc-400">Build Required?</td>
+                                <td class="p-4 text-green-400">No (Source only)</td>
+                                <td class="p-4 text-red-400">Yes (Compiled DB)</td>
+                                <td class="p-4 text-green-400">No</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4 font-semibold text-zinc-400">False Positive Rate</td>
+                                <td class="p-4 text-green-400">Low (AI Filtering)</td>
+                                <td class="p-4 text-yellow-500">Low/Medium</td>
+                                <td class="p-4 text-red-400">High (No flow context)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4 font-semibold text-zinc-400">Digital Footprint</td>
+                                <td class="p-4 text-green-400">Integrated</td>
+                                <td class="p-4 text-zinc-600">No</td>
+                                <td class="p-4 text-zinc-600">No</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <h4 class="font-bold text-white mb-2">Username Search</h4>
-                <p class="text-sm text-zinc-400">Find accounts across 100+ social platforms to discover digital footprints.</p>
-            </div>
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
-                    <i class="fas fa-network-wired"></i>
+            </section>
+            
+            <!-- Digital Footprint -->
+            <section id="footprint" class="scroll-mt-24">
+                <h2 class="text-2xl font-bold text-white mb-4">Digital Footprint Monitoring</h2>
+                <div class="prose prose-invert max-w-none text-zinc-400">
+                    <p>
+                        Security doesn't stop at code. Vulnrix includes a specialized <strong>OSINT module</strong> that scans:
+                    </p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 marker:text-teal-500">
+                        <li><strong>Public Leaks:</strong> Scans Pastebin, GitHub Gists, and dark web indexes for leaked API keys or credentials related to your domain.</li>
+                        <li><strong>Asset Discovery:</strong> Maps subdomains and exposed endpoints that might be running vulnerable code.</li>
+                        <li><strong>Social Engineering Risks:</strong> Analyzes public employee data that could be leveraged for phishing.</li>
+                    </ul>
                 </div>
-                <h4 class="font-bold text-white mb-2">IP Intelligence</h4>
-                <p class="text-sm text-zinc-400">Get geolocation, ISP info, open ports, and threat intelligence via Shodan.</p>
-            </div>
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
-                    <i class="fas fa-globe"></i>
+            </section>
+
+            <!-- FAQ -->
+            <section id="faq" class="scroll-mt-24">
+                <h2 class="text-2xl font-bold text-white mb-6">Technical FAQ</h2>
+                <div class="space-y-6">
+                    <div itemscope itemtype="https://schema.org/Question" class="border-b border-zinc-800 pb-4">
+                        <h3 itemprop="name" class="text-lg font-medium text-zinc-200 mb-2">Does Vulnrix store my source code?</h3>
+                        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                            <div itemprop="text" class="text-zinc-500 text-sm leading-relaxed">
+                                No. Source code is processed ephemerally in volatile memory during the scan. 
+                                Only metadata (function names, snippets of findings) is stored for reporting purposes.
+                            </div>
+                        </div>
+                    </div>
+                    <div itemscope itemtype="https://schema.org/Question" class="border-b border-zinc-800 pb-4">
+                        <h3 itemprop="name" class="text-lg font-medium text-zinc-200 mb-2">Can I scan private repositories?</h3>
+                        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                            <div itemprop="text" class="text-zinc-500 text-sm leading-relaxed">
+                                Yes. The <strong>Repo Scanner</strong> supports private repositories accessible via your GitHub/GitLab account tokens, or you can upload a ZIP archive of your source tree.
+                            </div>
+                        </div>
+                    </div>
+                    <div itemscope itemtype="https://schema.org/Question">
+                        <h3 itemprop="name" class="text-lg font-medium text-zinc-200 mb-2">What languages are supported?</h3>
+                        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                            <div itemprop="text" class="text-zinc-500 text-sm leading-relaxed">
+                                Currently, Vulnrix has optimized patterns for Python, JavaScript/TypeScript, Go, C/C++, PHP, and Rust. 
+                                The LLM verifier can interpret logic in almost any programming language.
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <h4 class="font-bold text-white mb-2">Domain Analysis</h4>
-                <p class="text-sm text-zinc-400">WHOIS lookup, DNS records, and SSL certificate security checks.</p>
-            </div>
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
-                    <i class="fas fa-phone"></i>
-                </div>
-                <h4 class="font-bold text-white mb-2">Phone Lookup</h4>
-                <p class="text-sm text-zinc-400">Carrier information and location data using Veriphone APIs.</p>
-            </div>
-            <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
-                    <i class="fas fa-mask"></i>
-                </div>
-                <h4 class="font-bold text-white mb-2">Dark Web Scan</h4>
-                <p class="text-sm text-zinc-400">Search paste sites for leaked credentials and mentions.</p>
-            </div>
+            </section>
+
         </div>
     </div>
 </div>

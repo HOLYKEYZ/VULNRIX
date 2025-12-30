@@ -12,12 +12,54 @@ import hashlib
 import requests
 from pathlib import Path
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 
 # Add vuln_scan directory to path for imports
+
+# SEO Views
+@require_http_methods(["GET"])
+def robots_txt(request):
+    """Serve robots.txt for search engines."""
+    content = """User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /vuln-node/
+Disallow: /admin/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /dashboard/
+
+Sitemap: https://vulnrix.com/sitemap.xml
+"""
+    return HttpResponse(content, content_type="text/plain")
+
+@require_http_methods(["GET"])
+def sitemap_xml(request):
+    """Serve sitemap.xml for SEO."""
+    base_url = "https://vulnrix.com"
+    pages = [
+        "",  # Home
+        "/docs/",
+        "/accounts/login/",
+        "/accounts/register/",
+    ]
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    for page in pages:
+        xml += '  <url>\n'
+        xml += f'    <loc>{base_url}{page}</loc>\n'
+        xml += '    <changefreq>weekly</changefreq>\n'
+        xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
+        
+    xml += '</urlset>'
+    return HttpResponse(xml, content_type="application/xml")
 vuln_scan_dir = Path(__file__).parent.parent.absolute()
 if str(vuln_scan_dir) not in sys.path:
     sys.path.insert(0, str(vuln_scan_dir))
