@@ -69,15 +69,14 @@
         </main>
 
         {% block footer %}
-        <footer class="w-full py-8 text-center border-t border-zinc-800 bg-zinc-950/50">
-            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <p class="text-xs text-zinc-500">© {% now "Y" %} VULNRIX Security.</p>
-                <div class="flex items-center gap-6 text-xs text-zinc-500">
-                    <a href="{% url 'docs' %}" class="hover:text-zinc-300 transition-colors">Documentation</a>
-                    <a href="https://github.com/HOLYKEYZ/VULNRIX" target="_blank" class="hover:text-zinc-300 transition-colors flex items-center gap-2">
-                        <i class="fab fa-github"></i> GitHub
-                    </a>
-                </div>
+        <footer class="mt-auto py-6 border-t border-border/30 text-center bg-zinc-950/50">
+            <p class="text-sm text-muted-foreground mb-2">Digital Security, Our Priority</p>
+            <div class="flex items-center justify-center gap-3 text-xs text-muted-foreground/70">
+                <span>&copy; {% now "Y" %} VULNRIX</span>
+                <span>•</span>
+                <a href="https://github.com/HOLYKEYZ/VULNRIX" target="_blank" class="hover:text-primary transition-colors inline-flex items-center gap-1">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
             </div>
         </footer>
         {% endblock %}

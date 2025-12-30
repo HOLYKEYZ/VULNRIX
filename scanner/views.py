@@ -358,3 +358,8 @@ def attack_surface(request, scan_id):
         'scan': scan,
         'graph_data': graph_data
     })
+
+@require_http_methods(["GET"])
+def docs(request):
+    """Render the documentation page."""
+    return render(request, 'docs.html')

@@ -134,6 +134,9 @@
                 <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-link {% if request.resolver_match.app_name == 'vuln_scan' and 'virustotal' not in request.path %}active{% endif %}">
                     <i class="fas fa-shield-alt w-4"></i> Dashboard
                 </a>
+                <a href="{% url 'docs' %}" class="sidebar-link {% if 'docs' in request.path %}active{% endif %}">
+                    <i class="fas fa-book w-4"></i> Documentation
+                </a>
             </div>
 
             <div class="sidebar-section">
