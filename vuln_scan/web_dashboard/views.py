@@ -13,7 +13,7 @@ import requests
 from pathlib import Path
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 
@@ -552,7 +552,7 @@ def start_repo_scan(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@csrf_exempt
+
 @login_required
 @require_http_methods(["POST"])
 def scan_next_file(request, project_id):
@@ -659,9 +659,11 @@ def project_status(request, project_id):
             "status": project.status,
             "total": project.total_files,
             "processed": project.processed_files,
-            "risk_score": project.risk_score,
-            "findings": findings_data,
+            "normalized_score": min(100, int((project.risk_score / max(1, project.total_files * 25)) * 100)) if project.total_files > 0 else 0,
+            "grade": "A" if project.risk_score == 0 else "F" if (project.risk_score / max(1, project.total_files)) > 50 else "C", # Simplified Grading
             "project_name": project.name,
+            "findings": findings_data,
+            "repo_url": project.repo_url
             "repo_url": project.repo_url
         })
     except Exception as e:
@@ -693,7 +695,7 @@ def project_file_details(request, project_id, file_id):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @require_http_methods(["GET", "POST"])
 def home(request):
     """

@@ -808,7 +808,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Populate summary stats
                 document.getElementById('repoResultName').textContent = data.repo_url || data.project_name || `Project #${projectId}`;
                 document.getElementById('repoResultFiles').textContent = data.total || 0;
-                document.getElementById('repoResultScore').textContent = data.risk_score || 0;
+                
+                // Score Normalization
+                const nScore = data.normalized_score !== undefined ? data.normalized_score : 0;
+                const grade = data.grade || 'C';
+                const scoreEl = document.getElementById('repoResultScore');
+                scoreEl.innerHTML = `<span class="text-3xl mr-2">${grade}</span><span class="text-sm opacity-60">(${nScore}%)</span>`;
+                scoreEl.className = grade === 'A' ? 'text-green-500 font-bold' : (grade === 'F' ? 'text-red-500 font-bold' : 'text-yellow-500 font-bold');
                 
                 const statusEl = document.getElementById('repoResultStatus');
                 statusEl.textContent = data.status || 'UNKNOWN';
