@@ -142,25 +142,31 @@ const char* get_whois_server(const char* domain) {
 /*
  * Send WHOIS query and receive response
  */
+/*
+ * Send WHOIS query and receive response
+ */
 int query_whois(const char* server, const char* query, char* response, int max_len) {
     int sock;
-    struct sockaddr_in addr;
-    struct hostent* host;
+    struct addrinfo hints, *res;
+    char send_buf[512];
     int total_bytes = 0;
     int bytes_read;
-    char send_buf[512];
     
     /* Resolve WHOIS server */
-    host = gethostbyname(server);
-    if (!host) {
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    
+    if (getaddrinfo(server, "43", &hints, &res) != 0) {
         fprintf(stderr, "[-] Failed to resolve WHOIS server: %s\n", server);
         return -1;
     }
     
     /* Create socket */
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sock < 0) {
         perror("socket");
+        freeaddrinfo(res);
         return -1;
     }
     
@@ -172,16 +178,14 @@ int query_whois(const char* server, const char* query, char* response, int max_l
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof(tv));
     
     /* Connect */
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(WHOIS_PORT);
-    memcpy(&addr.sin_addr, host->h_addr_list[0], host->h_length);
-    
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (connect(sock, res->ai_addr, res->ai_addrlen) < 0) {
         perror("connect");
         close(sock);
+        freeaddrinfo(res);
         return -1;
     }
+    
+    freeaddrinfo(res);
     
     /* Send query */
     snprintf(send_buf, sizeof(send_buf), "%s\r\n", query);

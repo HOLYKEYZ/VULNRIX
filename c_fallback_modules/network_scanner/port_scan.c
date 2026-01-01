@@ -1,6 +1,7 @@
 /*
  * Port Scanner - Pure C Implementation
  * TCP connect scan with banner grabbing
+ * Secured: Uses getaddrinfo, proper string bounds, memory checks
  * Compile: gcc -O2 -pthread -o port_scan port_scan.c
  */
 
@@ -147,6 +148,7 @@ int set_blocking(int sock) {
 int connect_with_timeout(const char* ip, int port, int timeout_ms) {
     int sock;
     struct sockaddr_in addr;
+    struct hostent* he;
     fd_set fdset;
     struct timeval tv;
     int result;
@@ -281,6 +283,7 @@ void* scan_worker(void* args) {
                 pr->port = port;
                 pr->state = PORT_OPEN;
                 strncpy(pr->service, get_service_name(port), sizeof(pr->service) - 1);
+                pr->service[sizeof(pr->service) - 1] = '\0'; // Ensure NULL term
                 
                 /* Try to grab banner */
                 memset(banner, 0, sizeof(banner));
@@ -288,6 +291,7 @@ void* scan_worker(void* args) {
                                              sizeof(banner), BANNER_TIMEOUT_MS);
                 if (pr->banner_len > 0) {
                     strncpy(pr->banner, banner, MAX_BANNER_LEN - 1);
+                    pr->banner[MAX_BANNER_LEN - 1] = '\0'; // Ensure NULL term
                 }
                 
                 (*targs->result_count)++;
@@ -334,6 +338,7 @@ int scan_ports(const char* target, int* ports, int port_count,
     if (resolve_host(target, ip, sizeof(ip)) < 0) {
         /* Maybe it's already an IP */
         strncpy(ip, target, sizeof(ip) - 1);
+        ip[sizeof(ip) - 1] = '\0';
     }
     
     printf("[*] Scanning %s (%s)\n", target, ip);
@@ -403,6 +408,8 @@ int scan_ports(const char* target, int* ports, int port_count,
  */
 int generate_port_list(const char* spec, int** ports_out) {
     int* ports = malloc(sizeof(int) * MAX_PORTS);
+    if (!ports) return 0;
+    
     int count = 0;
     
     if (strcmp(spec, "top100") == 0) {
@@ -427,20 +434,22 @@ int generate_port_list(const char* spec, int** ports_out) {
     else {
         /* Parse port range: "1-1000" or "80,443,8080" */
         char* spec_copy = strdup(spec);
-        char* token = strtok(spec_copy, ",");
-        
-        while (token && count < MAX_PORTS) {
-            int start, end;
-            if (sscanf(token, "%d-%d", &start, &end) == 2) {
-                for (int p = start; p <= end && count < MAX_PORTS; p++) {
-                    ports[count++] = p;
+        if (spec_copy) {
+            char* token = strtok(spec_copy, ",");
+            
+            while (token && count < MAX_PORTS) {
+                int start, end;
+                if (sscanf(token, "%d-%d", &start, &end) == 2) {
+                    for (int p = start; p <= end && count < MAX_PORTS; p++) {
+                        ports[count++] = p;
+                    }
+                } else {
+                    ports[count++] = atoi(token);
                 }
-            } else {
-                ports[count++] = atoi(token);
+                token = strtok(NULL, ",");
             }
-            token = strtok(NULL, ",");
+            free(spec_copy);
         }
-        free(spec_copy);
     }
     
     *ports_out = ports;
