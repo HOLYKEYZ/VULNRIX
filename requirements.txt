@@ -23,5 +23,5 @@ colorama>=0.4.6
 tree-sitter-python>=0.20.0
 tree-sitter-javascript>=0.20.0
 tree-sitter-go>=0.20.0
-urllib3>=1.26.19 # not directly required, pinned by Snyk to avoid a vulnerability
+urllib3>=2.6.0 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
