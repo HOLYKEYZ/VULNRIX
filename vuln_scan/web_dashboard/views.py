@@ -476,7 +476,7 @@ from ..services.file_filter import is_safe_file
 SCAN_TEMP_BASE = Path(tempfile.gettempdir()) / "vulnrix_scans"
 SCAN_TEMP_BASE.mkdir(exist_ok=True)
 
-@csrf_exempt
+
 @login_required
 @require_http_methods(["POST"])
 def start_repo_scan(request):
@@ -663,7 +663,6 @@ def project_status(request, project_id):
             "grade": "A" if project.risk_score == 0 else "F" if (project.risk_score / max(1, project.total_files)) > 50 else "C", # Simplified Grading
             "project_name": project.name,
             "findings": findings_data,
-            "repo_url": project.repo_url
             "repo_url": project.repo_url
         })
     except Exception as e:

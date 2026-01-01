@@ -262,16 +262,22 @@ void extract_version(const char* banner, const char* service, char* version, int
 /*
  * Grab banner from host:port
  */
+/*
+ * Grab banner from host:port
+ * Secured: Uses getaddrinfo, proper string bounds
+ */
 int grab_banner(const char* host, int port, banner_result_t* result) {
-    int sock;
-    struct sockaddr_in addr;
-    struct hostent* he;
+    int sock = -1;
+    struct addrinfo hints, *res = NULL, *p;
+    char port_str[6];
     fd_set fdset;
     struct timeval tv;
     service_probe_t* probe;
-    int bytes_read;
+    int bytes_read = 0;
     
     memset(result, 0, sizeof(banner_result_t));
+    
+    // Secure string copy for host
     strncpy(result->host, host, sizeof(result->host) - 1);
     result->host[sizeof(result->host) - 1] = '\0';
     result->port = port;
@@ -279,48 +285,50 @@ int grab_banner(const char* host, int port, banner_result_t* result) {
     /* Get probe for this port */
     probe = get_probe_for_port(port);
     strncpy(result->service, probe->service, sizeof(result->service) - 1);
+    result->service[sizeof(result->service) - 1] = '\0'; // Ensure null term
     
-    /* Resolve host */
-    he = gethostbyname(host);
-    if (!he) {
+    /* Resolve host using modern getaddrinfo */
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;      // Force IPv4 for simplicity
+    hints.ai_socktype = SOCK_STREAM;
+    
+    snprintf(port_str, sizeof(port_str), "%d", port);
+    
+    if (getaddrinfo(host, port_str, &hints, &res) != 0) {
         return -1;
     }
-    
-    /* Create socket */
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        return -1;
-    }
-    
-    /* Setup address */
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    memcpy(&addr.sin_addr, he->h_addr_list[0], he->h_length);
-    
-    /* Non-blocking connect */
-    set_nonblocking(sock);
-    connect(sock, (struct sockaddr*)&addr, sizeof(addr));
-    
-    /* Wait for connection */
-    FD_ZERO(&fdset);
-    FD_SET(sock, &fdset);
-    tv.tv_sec = CONNECT_TIMEOUT_MS / 1000;
-    tv.tv_usec = (CONNECT_TIMEOUT_MS % 1000) * 1000;
-    
-    if (select(sock + 1, NULL, &fdset, NULL, &tv) <= 0) {
+
+    /* Iterate results */
+    for(p = res; p != NULL; p = p->ai_next) {
+        sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sock == -1) continue;
+
+        /* Non-blocking connect */
+        set_nonblocking(sock);
+        connect(sock, p->ai_addr, p->ai_addrlen);
+        
+        /* Wait for connection */
+        FD_ZERO(&fdset);
+        FD_SET(sock, &fdset);
+        tv.tv_sec = CONNECT_TIMEOUT_MS / 1000;
+        tv.tv_usec = (CONNECT_TIMEOUT_MS % 1000) * 1000;
+        
+        if (select(sock + 1, NULL, &fdset, NULL, &tv) > 0) {
+            /* Check connection result */
+            int so_error;
+            socklen_t len = sizeof(so_error);
+            getsockopt(sock, SOL_SOCKET, SO_ERROR, (char*)&so_error, &len);
+            if (so_error == 0) {
+                break; // Connected
+            }
+        }
         close(sock);
-        return -1;
+        sock = -1;
     }
     
-    /* Check connection result */
-    int so_error;
-    socklen_t len = sizeof(so_error);
-    getsockopt(sock, SOL_SOCKET, SO_ERROR, (char*)&so_error, &len);
-    if (so_error != 0) {
-        close(sock);
-        return -1;
-    }
+    freeaddrinfo(res);
+    
+    if (sock == -1) return -1;
     
     set_blocking(sock);
     
@@ -438,6 +446,10 @@ int main(int argc, char* argv[]) {
     
     /* Grab banners */
     banner_result_t* results = calloc(port_count, sizeof(banner_result_t));
+    if (!results) {
+        fprintf(stderr, "[-] Memory allocation failed\n");
+        return 1;
+    }
     int success_count = 0;
     
     for (int i = 0; i < port_count; i++) {
