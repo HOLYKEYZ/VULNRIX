@@ -20,7 +20,7 @@ BINARY_EXTENSIONS = {
 SOURCE_EXTENSIONS = {
     '.py', '.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.c', '.cpp', '.h', '.hpp',
     '.java', '.go', '.rs', '.php', '.rb', '.sh', '.bash', '.yaml', '.yml', '.json',
-    '.xml', '.sql', '.md', '.txt', '.dockerfile', 'dockerfile', '.lock'
+    '.xml', '.sql', '.dockerfile', 'dockerfile', '.lock'
 }
 
 def is_safe_file(file_path: str) -> bool:

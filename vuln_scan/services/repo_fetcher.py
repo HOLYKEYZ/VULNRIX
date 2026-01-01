@@ -13,15 +13,15 @@ from .scan_limiter import validate_project_limits
 
 logger = logging.getLogger("vuln_scan")
 
-def clone_repo(repo_url: str, target_dir: str) -> bool:
+def clone_repo(repo_url: str, target_dir: str) -> Tuple[bool, str]:
     """
     Shallow clone a git repository to target_dir.
-    Returns True if successful.
+    Returns (True, "") if successful, (False, error_message) if failed.
     """
     try:
         # Security check: Ensure URL is valid (basic check)
         if not repo_url.startswith(('http://', 'https://')):
-            raise ValueError("Invalid Git URL scheme")
+            return False, "Invalid Protocol: URL must start with http:// or https://"
             
         # Run git clone --depth 1
         cmd = ['git', 'clone', '--depth', '1', repo_url, target_dir]
@@ -35,16 +35,17 @@ def clone_repo(repo_url: str, target_dir: str) -> bool:
         )
         
         if result.returncode != 0:
-            logger.error(f"Git clone failed: {result.stderr}")
-            return False
+            error_msg = result.stderr.strip() or "Unknown Git Error"
+            logger.error(f"Git clone failed: {error_msg}")
+            return False, error_msg
             
-        return True
+        return True, ""
     except subprocess.TimeoutExpired:
         logger.error("Git clone timed out")
-        return False
+        return False, "Git Clone Timed Out (30s limit)"
     except Exception as e:
         logger.error(f"Git clone error: {e}")
-        return False
+        return False, f"Git Error: {str(e)}"
 
 def extract_zip(zip_path: str, target_dir: str) -> bool:
     """

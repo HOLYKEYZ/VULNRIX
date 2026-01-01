@@ -504,10 +504,11 @@ def start_repo_scan(request):
         project_dir.mkdir(parents=True, exist_ok=True)
         
         # Clone
-        if not clone_repo(repo_url, str(project_dir)):
+        success, error_msg = clone_repo(repo_url, str(project_dir))
+        if not success:
             project.status = 'ERROR'
             project.save()
-            return JsonResponse({"error": "Failed to clone repository"}, status=400)
+            return JsonResponse({"error": f"Clone Failed: {error_msg}"}, status=400)
             
         # Discover files
         files_created = []
@@ -572,6 +573,10 @@ def scan_next_file(request, project_id):
         if not next_file:
             # Check if all done
             if not project.file_results.filter(status='PROCESSING').exists():
+                # Aggregate Risk Score
+                total_risk = sum(f.risk_score for f in project.file_results.all())
+                project.risk_score = total_risk
+                
                 project.status = 'COMPLETED'
                 project.completed_at = timezone.now()
                 # Cleanup

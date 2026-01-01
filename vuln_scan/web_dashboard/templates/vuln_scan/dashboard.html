@@ -416,7 +416,16 @@ window.startScan = async () => {
             throw new Error(`Server returned ${res.status} (Not JSON). Check server logs.`);
         }
 
-        const data = await res.json();
+        // Parse JSON safely
+        let data;
+        try {
+            data = await res.json();
+        } catch (parseError) {
+             // If JSON parse fails, read text to see what happened
+             console.error("JSON Parse failed", parseError);
+             const text = await res.text().catch(() => "Unable to read response text");
+             throw new Error(`Server returned invalid JSON (Status ${res.status}). First 100 chars: ${text.substring(0, 100).replace(/</g, '&lt;')}`);
+        }
         
         if (!res.ok) {
             throw new Error(data.error || "Unknown error occurred");
@@ -643,7 +652,7 @@ function renderResults(data, filename) {
 function loadScanResult(scanId) {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
-    fetch(`/vuln/history/${scanId}/`, {
+    fetch(`/dashboard/history/${scanId}/`, {
         method: 'GET',
         headers: {
             'X-CSRFToken': csrfToken,
@@ -786,7 +795,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addLog(`Analysis Completed for Project #${projectId}`, 'success');
         
         // Fetch Status
-        fetch(`/vuln/project/${projectId}/status/`)
+        fetch(`/dashboard/project/${projectId}/status/`)
             .then(res => res.json())
             .then(data => {
                 currentProjectId = projectId;
@@ -904,7 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const loop = async () => {
             try {
-                const res = await fetch(`/vuln/project/${projectId}/scan-file/`, {
+                const res = await fetch(`/dashboard/project/${projectId}/scan-file/`, {
                     method: 'POST',
                     headers: {'X-CSRFToken': '{{ csrf_token }}'}
                 });
@@ -953,12 +962,21 @@ document.addEventListener('DOMContentLoaded', () => {
             addLog("Fetching repository...", "info");
             projectProgress.classList.remove('hidden');
             
-            const res = await fetch('/vuln/scan/repo/', {
+            const res = await fetch('/dashboard/scan/repo/', {
                 method: 'POST',
                 body: formData,
                 headers: {'X-CSRFToken': '{{ csrf_token }}'}
             });
-            const data = await res.json();
+            
+            // Parse JSON safely
+            let data;
+            try {
+                data = await res.json();
+            } catch (parseError) {
+                 console.error("Repo Scan JSON Parse failed", parseError);
+                 const text = await res.text().catch(() => "Unable to read response text");
+                 throw new Error(`Server returned invalid JSON (Status ${res.status}). First 100 chars: ${text.substring(0, 100).replace(/</g, '&lt;')}`);
+            }
             
             if(!res.ok) throw new Error(data.error);
             
@@ -984,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Show inline file details
     function showInlineFileDetails(projectId, fileId, filename) {
-        fetch(`/vuln/project/${projectId}/file/${fileId}/`)
+        fetch(`/dashboard/project/${projectId}/file/${fileId}/`)
             .then(res => res.json())
             .then(data => {
                 document.getElementById('repoFileDetailName').textContent = filename;

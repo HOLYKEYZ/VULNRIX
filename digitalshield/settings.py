@@ -169,10 +169,38 @@ GROK_API_KEY = env('GROK_API_KEY', default=None)
 # Pagination
 SCANS_PER_PAGE = 10
 
+# File Upload Limit (10MB) to prevent HTML 400 errors on large files
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
 # =============================================================================
 # C FALLBACK CONFIGURATION
 # =============================================================================
 # Controls automatic fallback to C implementations when APIs fail
+
+# =============================================================================
+# PRODUCTION SECURITY SETTINGS
+# =============================================================================
+# These settings are automatically enabled when DEBUG=False
+if not DEBUG:
+    # HTTPS/SSL Settings - Only enable on Render or if explicitly requested
+    if os.environ.get('RENDER') or os.environ.get('ENABLE_SSL'):
+        SECURE_SSL_REDIRECT = True
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # HSTS Settings (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Cookie Security
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    
+    # Content Security
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_BROWSER_XSS_FILTER = True
 
 FALLBACK_CONFIG = {
     # Global settings
@@ -253,13 +281,18 @@ VERIPHONE_API_KEY = env('VERIPHONE_API_KEY', default=None)
 # =============================================================================
 # PRODUCTION SECURITY SETTINGS
 # =============================================================================
+# =============================================================================
+# PRODUCTION SECURITY SETTINGS
+# =============================================================================
 # These settings are automatically enabled when DEBUG=False
 if not DEBUG:
-    # HTTPS/SSL Settings
-    SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # HTTPS/SSL Settings - Only enable on Render or if explicitly requested
+    if os.environ.get('RENDER') or os.environ.get('ENABLE_SSL'):
+        SECURE_SSL_REDIRECT = True
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
     # HSTS Settings (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True

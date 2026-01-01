@@ -258,7 +258,23 @@
                 method: 'POST',
                 body: formData
             });
-            const data = await res.json();
+            
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                console.error("Non-JSON Response:", text);
+                throw new Error(`Server returned ${res.status} (${res.statusText}). Content: ${text.substring(0, 50)}...`);
+            }
+
+            // Parse JSON safely
+            let data;
+            try {
+                data = await res.json();
+            } catch (parseError) {
+                 console.error("JSON Parse failed", parseError);
+                 const text = await res.text().catch(() => "Unable to read response text");
+                 throw new Error(`Server returned invalid JSON (Status ${res.status}). First 100 chars: ${text.substring(0, 100).replace(/</g, '&lt;')}`);
+            }
             
             if(data.error) {
                 if(res.status === 403 && data.limit_reached) {
@@ -277,7 +293,7 @@
 
         } catch(e) {
             console.error(e);
-            alert('Scan failed.');
+            alert('Scan failed: ' + e.message);
         } finally {
             scanLoading.classList.add('hidden');
             fileInput.value = '';
