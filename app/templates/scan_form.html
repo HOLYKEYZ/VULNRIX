@@ -3,368 +3,247 @@
 {% block title %}New Scan - VULNRIX{% endblock %}
 
 {% block content %}
-<div class="container mx-auto max-w-4xl pb-10">
-    <!-- Header -->
-    <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center p-4 rounded-full bg-primary/10 mb-4 animate-[pulse-glow_3s_infinite]">
-            <i class="fas fa-radar text-4xl text-primary"></i>
-        </div>
-        <h1 class="text-3xl font-bold tracking-tight mb-2">New OSINT Scan</h1>
-        <p class="text-gray-300 max-w-xl mx-auto">Enter target identity or infrastructure details. Our engines will correlate data across multiple sources to build a digital footprint profile.</p>
-    </div>
-
-    <!-- Main Card -->
-    <div class="card p-0 overflow-hidden">
-        <!-- Tabs -->
-        <div class="flex border-b border-border bg-muted/30">
-            <button type="button" id="tab-comprehensive" onclick="switchTab('comprehensive')" class="flex-1 py-4 text-sm font-medium border-b-2 border-primary text-primary bg-background">
-                <i class="fas fa-search-plus mr-2"></i> Comprehensive Scan
-            </button>
-            <button type="button" id="tab-quick" onclick="switchTab('quick')" class="flex-1 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-foreground hover:bg-muted/50 transition-colors">
-                <i class="fas fa-bolt mr-2"></i> Quick Lookup
-            </button>
+<div class="hacker-theme min-h-screen flex items-center justify-center p-4 relative">
+    <div class="scanline"></div>
+    
+    <div class="card w-full max-w-2xl border-green-500 shadow-lg shadow-green-500/20 bg-black">
+        <div class="flex items-center justify-between mb-6 border-b border-green-900 pb-4">
+            <h1 class="text-2xl font-bold text-green-500 font-mono glitch" data-text="INITIATE_SCAN"><i class="fas fa-terminal mr-2"></i>INITIATE_SCAN</h1>
+            <div class="flex gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+            </div>
         </div>
 
-        <!-- Quick Lookup Panel (hidden by default) -->
-        <div id="quick-lookup-panel" class="p-8 hidden">
-            <div class="hacker-theme min-h-screen flex items-center justify-center p-4 relative">
-                <div class="scanline"></div>
-                
-                <div class="card w-full max-w-2xl border-green-500 shadow-lg shadow-green-500/20">
-                    <div class="flex items-center justify-between mb-6 border-b border-green-900 pb-4">
-                        <h1 class="text-2xl font-bold text-green-500 font-mono"><i class="fas fa-terminal mr-2"></i>INITIATE_SCAN_SEQUENCE</h1>
-                        <div class="flex gap-2">
-                            <span class="w-3 h-3 rounded-full bg-red-500"></span>
-                            <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
-                            <span class="w-3 h-3 rounded-full bg-green-500"></span>
-                        </div>
-                    </div>
-
-                    <form method="POST" id="quick-scan-form" class="space-y-6 font-mono">
-                        {% csrf_token %}
-                        <input type="hidden" name="scan_mode" value="quick">
-                        
-                        <!-- Radio buttons for scan type -->
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
-                            <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                                <input type="radio" name="quick_type" value="email" class="hidden" required>
-                                <i class="fas fa-envelope text-2xl mb-2 text-blue-500"></i>
-                                <span class="text-xs font-medium">Email</span>
-                            </label>
-                            <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                                <input type="radio" name="quick_type" value="username" class="hidden">
-                                <i class="fas fa-user text-2xl mb-2 text-purple-500"></i>
-                                <span class="text-xs font-medium">Username</span>
-                            </label>
-                            <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                                <input type="radio" name="quick_type" value="phone" class="hidden">
-                                <i class="fas fa-phone text-2xl mb-2 text-green-500"></i>
-                                <span class="text-xs font-medium">Phone</span>
-                            </label>
-                            <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                                <input type="radio" name="quick_type" value="domain" class="hidden">
-                                <i class="fas fa-globe text-2xl mb-2 text-orange-500"></i>
-                                <span class="text-xs font-medium">Domain</span>
-                            </label>
-                            <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                                <input type="radio" name="quick_type" value="ip" class="hidden">
-                                <i class="fas fa-network-wired text-2xl mb-2 text-red-500"></i>
-                                <span class="text-xs font-medium">IP Address</span>
-                            </label>
-                        </div>
-                        
-                        <!-- Single input field -->
-                        <div class="space-y-2 mb-6">
-                            <label class="text-sm font-medium leading-none">Enter Value</label>
-                            <input type="text" name="quick_value" id="quick-value-input" class="form-input w-full text-lg" placeholder="Enter the value to scan..." required>
-                        </div>
-                        
-                        <div class="flex justify-center">
-                            <button type="submit" class="btn btn--primary px-8">
-                                <i class="fas fa-bolt mr-2"></i> Quick Scan
-                            </button>
-                        </div>
-                    </form>
+        <form method="POST" id="quick-scan-form" class="space-y-6 font-mono">
+            {% csrf_token %}
+            <!-- Default to quick mode for this interface -->
+            <input type="hidden" name="scan_mode" value="quick">
+            
+            <!-- Radio buttons for scan type (Hacker Style) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
+                <label class="quick-type-option cursor-pointer border border-green-800 bg-black hover:border-green-500 hover:shadow-[0_0_10px_rgba(0,255,0,0.2)] transition-all p-3 rounded flex flex-col items-center gap-2 group">
+                    <input type="radio" name="quick_type" value="email" class="hidden">
+                    <i class="fas fa-envelope text-xl text-green-700 group-hover:text-green-400 transition-colors"></i>
+                    <span class="text-[10px] uppercase tracking-widest text-green-700 group-hover:text-green-400">Email</span>
+                </label>
+                <label class="quick-type-option cursor-pointer border border-green-800 bg-black hover:border-green-500 hover:shadow-[0_0_10px_rgba(0,255,0,0.2)] transition-all p-3 rounded flex flex-col items-center gap-2 group">
+                    <input type="radio" name="quick_type" value="username" class="hidden">
+                    <i class="fas fa-user-secret text-xl text-green-700 group-hover:text-green-400 transition-colors"></i>
+                    <span class="text-[10px] uppercase tracking-widest text-green-700 group-hover:text-green-400">User</span>
+                </label>
+                <label class="quick-type-option cursor-pointer border border-green-800 bg-black hover:border-green-500 hover:shadow-[0_0_10px_rgba(0,255,0,0.2)] transition-all p-3 rounded flex flex-col items-center gap-2 group">
+                    <input type="radio" name="quick_type" value="phone" class="hidden">
+                    <i class="fas fa-phone-alt text-xl text-green-700 group-hover:text-green-400 transition-colors"></i>
+                    <span class="text-[10px] uppercase tracking-widest text-green-700 group-hover:text-green-400">Phone</span>
+                </label>
+                <label class="quick-type-option cursor-pointer border border-green-800 bg-black hover:border-green-500 hover:shadow-[0_0_10px_rgba(0,255,0,0.2)] transition-all p-3 rounded flex flex-col items-center gap-2 group">
+                    <input type="radio" name="quick_type" value="domain" class="hidden">
+                    <i class="fas fa-globe text-xl text-green-700 group-hover:text-green-400 transition-colors"></i>
+                    <span class="text-[10px] uppercase tracking-widest text-green-700 group-hover:text-green-400">Domain</span>
+                </label>
+                <label class="quick-type-option cursor-pointer border border-green-800 bg-black hover:border-green-500 hover:shadow-[0_0_10px_rgba(0,255,0,0.2)] transition-all p-3 rounded flex flex-col items-center gap-2 group">
+                    <input type="radio" name="quick_type" value="ip" class="hidden">
+                    <i class="fas fa-network-wired text-xl text-green-700 group-hover:text-green-400 transition-colors"></i>
+                    <span class="text-[10px] uppercase tracking-widest text-green-700 group-hover:text-green-400">Net/IP</span>
+                </label>
+            </div>
+            
+            <!-- Input Field (Terminal Style) -->
+            <div class="space-y-2 mb-8 group">
+                <label class="text-xs font-mono text-green-600 uppercase tracking-widest group-hover:text-green-400 transition-colors">Target_Identifier >_</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-green-500 font-mono">$</span>
+                    <input type="text" name="quick_value" id="quick-value-input" class="w-full bg-black border border-green-800 text-green-400 p-2 pl-8 font-mono focus:border-green-400 focus:shadow-[0_0_15px_rgba(0,255,0,0.3)] outline-none transition-all placeholder-green-900" placeholder="enter_target...">
                 </div>
             </div>
-                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                        <input type="radio" name="quick_type" value="email" class="hidden" required>
-                        <i class="fas fa-envelope text-2xl mb-2 text-blue-500"></i>
-                        <span class="text-xs font-medium">Email</span>
-                    </label>
-                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                        <input type="radio" name="quick_type" value="username" class="hidden">
-                        <i class="fas fa-user text-2xl mb-2 text-purple-500"></i>
-                        <span class="text-xs font-medium">Username</span>
-                    </label>
-                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                        <input type="radio" name="quick_type" value="phone" class="hidden">
-                        <i class="fas fa-phone text-2xl mb-2 text-green-500"></i>
-                        <span class="text-xs font-medium">Phone</span>
-                    </label>
-                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                        <input type="radio" name="quick_type" value="domain" class="hidden">
-                        <i class="fas fa-globe text-2xl mb-2 text-orange-500"></i>
-                        <span class="text-xs font-medium">Domain</span>
-                    </label>
-                    <label class="quick-type-option flex flex-col items-center p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 cursor-pointer transition-all">
-                        <input type="radio" name="quick_type" value="ip" class="hidden">
-                        <i class="fas fa-network-wired text-2xl mb-2 text-red-500"></i>
-                        <span class="text-xs font-medium">IP Address</span>
-                    </label>
+            
+            <!-- Darkweb Module Toggle (Hacker Style) -->
+            <div class="flex items-center justify-end mb-2">
+                 <label class="cursor-pointer border border-green-500 bg-green-900/10 px-4 py-2 flex items-center gap-2 hover:bg-green-900/30 transition-all shadow-[0_0_5px_rgba(0,255,0,0.3)] animate-pulse">
+                    <input type="checkbox" name="darkweb_check" value="true" checked class="accent-green-500">
+                    <span class="text-xs text-green-400 font-mono font-bold tracking-wider glitch" data-text="DARKWEB_ACTIVE"><i class="fas fa-skull mr-1"></i> DARKWEB_MODULE :: ACTIVE</span>
+                </label>
+            </div>
+
+        <div class="flex justify-center mt-6">
+            <button type="submit" class="btn btn--primary w-full border border-green-500 text-green-500 hover:bg-green-500 hover:text-black uppercase font-bold tracking-widest py-3 transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_20px_rgba(0,255,0,0.6)]">
+                <i class="fas fa-biohazard mr-2"></i> EXECUTE_SCAN
+            </button>
+        </div>
+        </form>
+        
+        
+        <div class="mt-8 border-t border-green-900 pt-6">
+            <button type="button" onclick="toggleAdvanced()" class="text-xs font-mono text-green-700 hover:text-green-500 flex items-center gap-2 transition-colors">
+                <i class="fas fa-plus-square" id="adv-icon"></i> ACCESS_DETAILED_TARGET_DOSSIER [ADVANCED]
+            </button>
+            
+            <div id="advanced-panel" class="hidden mt-6 animate-in fade-in slide-in-from-top-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-mono text-green-800 uppercase">Target_Full_Name</label>
+                        <input type="text" name="name" class="w-full bg-black border border-green-900 text-green-500 p-2 font-mono text-sm focus:border-green-500 outline-none transition-colors placeholder-green-900/50" placeholder="John Doe">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-mono text-green-800 uppercase">Target_Email</label>
+                        <input type="email" name="email" class="w-full bg-black border border-green-900 text-green-500 p-2 font-mono text-sm focus:border-green-500 outline-none transition-colors placeholder-green-900/50" placeholder="target@corp.com">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-mono text-green-800 uppercase">Target_Username</label>
+                        <input type="text" name="username" class="w-full bg-black border border-green-900 text-green-500 p-2 font-mono text-sm focus:border-green-500 outline-none transition-colors placeholder-green-900/50" placeholder="shadow_user_99">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-mono text-green-800 uppercase">Target_Phone</label>
+                        <input type="text" name="phone" class="w-full bg-black border border-green-900 text-green-500 p-2 font-mono text-sm focus:border-green-500 outline-none transition-colors placeholder-green-900/50" placeholder="+1-555-0100">
+                    </div>
                 </div>
                 
-                <!-- Single input field -->
+                <div class="border-t border-green-900/50 my-4"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-mono text-green-800 uppercase">Infrastructure_Domain</label>
+                        <input type="text" name="domain" class="w-full bg-black border border-green-900 text-green-500 p-2 font-mono text-sm focus:border-green-500 outline-none transition-colors placeholder-green-900/50" placeholder="target-systems.net">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-mono text-green-800 uppercase">Infrastructure_IP</label>
+                        <input type="text" name="ip" class="w-full bg-black border border-green-900 text-green-500 p-2 font-mono text-sm focus:border-green-500 outline-none transition-colors placeholder-192.168.x.x" placeholder="192.168.1.5">
+                    </div>
+                </div>
+                
                 <div class="space-y-2 mb-6">
-                    <label class="text-sm font-medium leading-none">Enter Value</label>
-                    <input type="text" name="quick_value" id="quick-value-input" class="form-input w-full text-lg" placeholder="Enter the value to scan..." required>
+                    <label class="text-[10px] font-mono text-green-800 uppercase">Social_Vectors_To_Probe</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <label class="cursor-pointer border border-green-900 bg-black p-2 flex items-center gap-2 hover:bg-green-900/20 transition-colors">
+                            <input type="checkbox" name="social_platforms" value="twitter" class="accent-green-500">
+                            <span class="text-xs text-green-600 font-mono">TWITTER_X</span>
+                        </label>
+                        <label class="cursor-pointer border border-green-900 bg-black p-2 flex items-center gap-2 hover:bg-green-900/20 transition-colors">
+                            <input type="checkbox" name="social_platforms" value="instagram" class="accent-green-500">
+                            <span class="text-xs text-green-600 font-mono">INSTAGRAM</span>
+                        </label>
+                        <label class="cursor-pointer border border-green-900 bg-black p-2 flex items-center gap-2 hover:bg-green-900/20 transition-colors">
+                            <input type="checkbox" name="social_platforms" value="linkedin" class="accent-green-500">
+                            <span class="text-xs text-green-600 font-mono">LINKEDIN</span>
+                        </label>
+                        <label class="cursor-pointer border border-green-900 bg-black p-2 flex items-center gap-2 hover:bg-green-900/20 transition-colors">
+                            <input type="checkbox" name="social_platforms" value="github" class="accent-green-500">
+                            <span class="text-xs text-green-600 font-mono">GITHUB</span>
+                        </label>
+                    </div>
                 </div>
-                
-                <div class="flex justify-center">
-                    <button type="submit" class="btn btn--primary px-8">
-                        <i class="fas fa-bolt mr-2"></i> Quick Scan
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
 
-        <!-- Comprehensive Scan Panel -->
-        <div id="comprehensive-panel" class="p-8">
-            <form method="POST" id="scan-form">
-                {% csrf_token %}
-                
-                <!-- Section 1: Identity -->
-                <div class="mb-8">
-                    <h3 class="flex items-center text-lg font-semibold mb-4 text-foreground">
-                        <span class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary text-sm mr-3">1</span>
-                        Identity Information
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none">Full Name</label>
-                            <input type="text" name="name" class="form-input w-full" placeholder="e.g. John Doe">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none">Email Address</label>
-                            <input type="email" name="email" class="form-input w-full" placeholder="e.g. john.doe@entity.com">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none">Username</label>
-                            <input type="text" name="username" class="form-input w-full" placeholder="e.g. jdoe1999">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none">Phone Number</label>
-                            <input type="tel" name="phone" class="form-input w-full" placeholder="e.g. +1 555 0199">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="h-px bg-border my-8"></div>
-
-                <!-- Section 2: Infrastructure -->
-                <div class="mb-8">
-                    <h3 class="flex items-center text-lg font-semibold mb-4 text-foreground">
-                        <span class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary text-sm mr-3">2</span>
-                        Infrastructure
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none">Domain Name</label>
-                            <input type="text" name="domain" class="form-input w-full" placeholder="e.g. entity.com">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-medium leading-none">IP Address</label>
-                            <input type="text" name="ip" class="form-input w-full" placeholder="e.g. 192.168.1.50">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="h-px bg-border my-8"></div>
-
-                <!-- Section 3: Platforms -->
-                <div class="mb-8">
-                    <h3 class="flex items-center text-lg font-semibold mb-4 text-foreground">
-                        <span class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary text-sm mr-3">3</span>
-                        Social Platforms
-                    </h3>
-                    
-                    <!-- Search Filter -->
-                    <div class="relative mb-4">
-                        <input type="text" id="platform-search" class="form-input w-full" placeholder="Search platforms..." oninput="filterPlatforms(this.value)">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="platforms-grid">
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="instagram">
-                            <input type="checkbox" name="social_platforms" value="instagram" class="hidden">
-                            <i class="fab fa-instagram text-2xl mb-1" style="color: #E4405F;"></i>
-                            <span class="text-xs font-medium">Instagram</span>
-                        </label>
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="facebook">
-                            <input type="checkbox" name="social_platforms" value="facebook" class="hidden">
-                            <i class="fab fa-facebook text-2xl mb-1" style="color: #1877F2;"></i>
-                            <span class="text-xs font-medium">Facebook</span>
-                        </label>
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="twitter">
-                            <input type="checkbox" name="social_platforms" value="twitter" class="hidden">
-                            <i class="fab fa-twitter text-2xl mb-1" style="color: #1DA1F2;"></i>
-                            <span class="text-xs font-medium">Twitter/X</span>
-                        </label>
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="threads">
-                            <input type="checkbox" name="social_platforms" value="threads" class="hidden">
-                            <i class="fab fa-threads text-2xl mb-1"></i>
-                            <span class="text-xs font-medium">Threads</span>
-                        </label>
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="tiktok">
-                            <input type="checkbox" name="social_platforms" value="tiktok" class="hidden">
-                            <i class="fab fa-tiktok text-2xl mb-1"></i>
-                            <span class="text-xs font-medium">TikTok</span>
-                        </label>
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="linkedin">
-                            <input type="checkbox" name="social_platforms" value="linkedin" class="hidden">
-                            <i class="fab fa-linkedin text-2xl mb-1" style="color: #0A66C2;"></i>
-                            <span class="text-xs font-medium">LinkedIn</span>
-                        </label>
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="github">
-                            <input type="checkbox" name="social_platforms" value="github" class="hidden">
-                            <i class="fab fa-github text-2xl mb-1"></i>
-                            <span class="text-xs font-medium">GitHub</span>
-                        </label>
-                        <label class="platform-item cursor-pointer border border-border rounded-lg p-3 flex flex-col items-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-all has-[:checked]:bg-primary/10 has-[:checked]:border-primary" data-name="youtube">
-                            <input type="checkbox" name="social_platforms" value="youtube" class="hidden">
-                            <i class="fab fa-youtube text-2xl mb-1" style="color: #FF0000;"></i>
-                            <span class="text-xs font-medium">YouTube</span>
-                        </label>
-                    </div>
-                    
-                    <script>
-                    function filterPlatforms(query) {
-                        query = query.toLowerCase();
-                        document.querySelectorAll('.platform-item').forEach(item => {
-                            const name = item.dataset.name;
-                            item.style.display = name.includes(query) ? 'flex' : 'none';
-                        });
-                    }
-                    </script>
-                </div>
-
-                <div class="flex justify-end gap-3 mt-8">
-                    <a href="{% url 'scanner:dashboard' %}" class="btn btn--ghost">Cancel</a>
-                    <button type="submit" id="submit-btn" class="btn btn--primary px-8">
-                        <i class="fas fa-radar mr-2"></i> Launch Scan
-                    </button>
-                </div>
-            </form>
+        <div class="mt-4 text-center">
+             <p class="text-[10px] text-green-900 font-mono">SECURE_CONNECTION_ESTABLISHED // ENCRYPTED_UPLINK_ACTIVE</p>
         </div>
-    </div>
-</div>
-
-<!-- Full Screen Overlay -->
-<div id="scan-overlay" class="fixed inset-0 bg-background/95 z-[9999] hidden flex-col items-center justify-center p-4">
-    <div class="relative w-32 h-32 mb-8">
-        <div class="absolute inset-0 border-4 border-primary/30 rounded-full animate-ping"></div>
-        <div class="absolute inset-0 border-4 border-t-primary border-r-transparent border-b-primary border-l-transparent rounded-full animate-spin"></div>
-        <div class="absolute inset-0 flex items-center justify-center">
-            <i class="fas fa-fingerprint text-4xl text-primary animate-pulse"></i>
-        </div>
-    </div>
-    
-    <h2 class="text-2xl font-bold mb-2">Scanning Target Environment</h2>
-    <p class="text-muted mb-8" id="scan-status-text">Initializing engines...</p>
-    
-    <div class="w-full max-w-md bg-secondary rounded-full h-2 mb-4 overflow-hidden">
-        <div class="h-full bg-primary transition-all duration-300 ease-out" id="progress-fill" style="width: 0%"></div>
-    </div>
-    
-    <div class="grid grid-cols-4 gap-4 w-full max-w-lg mt-8 text-center text-xs text-muted">
-        <div id="step-1" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Connect</div>
-        <div id="step-2" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Breaches</div>
-        <div id="step-3" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Socials</div>
-        <div id="step-4" class="step"><i class="fas fa-circle mb-1 block text-[8px]"></i>Report</div>
     </div>
 </div>
 
 <script>
-// Tab Switching Logic
-function switchTab(tab) {
-    const compPanel = document.getElementById('comprehensive-panel');
-    const quickPanel = document.getElementById('quick-lookup-panel');
-    const tabComp = document.getElementById('tab-comprehensive');
-    const tabQuick = document.getElementById('tab-quick');
+function toggleAdvanced() {
+    const panel = document.getElementById('advanced-panel');
+    const icon = document.getElementById('adv-icon');
+    const isHidden = panel.classList.contains('hidden');
     
-    if (tab === 'quick') {
-        compPanel.classList.add('hidden');
-        quickPanel.classList.remove('hidden');
-        tabComp.classList.remove('border-primary', 'text-primary', 'bg-background');
-        tabComp.classList.add('border-transparent', 'text-muted');
-        tabQuick.classList.add('border-primary', 'text-primary', 'bg-background');
-        tabQuick.classList.remove('border-transparent', 'text-muted');
+    if (isHidden) {
+        panel.classList.remove('hidden');
+        icon.classList.remove('fa-plus-square');
+        icon.classList.add('fa-minus-square');
     } else {
-        compPanel.classList.remove('hidden');
-        quickPanel.classList.add('hidden');
-        tabQuick.classList.remove('border-primary', 'text-primary', 'bg-background');
-        tabQuick.classList.add('border-transparent', 'text-muted');
-        tabComp.classList.add('border-primary', 'text-primary', 'bg-background');
-        tabComp.classList.remove('border-transparent', 'text-muted');
+        panel.classList.add('hidden');
+        icon.classList.remove('fa-minus-square');
+        icon.classList.add('fa-plus-square');
     }
 }
+</script>
 
-// Quick type option styling
+<!-- Full Screen Overlay (Hacker Style) -->
+<div id="scan-overlay" class="fixed inset-0 bg-black/95 z-[9999] hidden flex-col items-center justify-center p-4 font-mono">
+    <div class="scanline"></div>
+    <div class="relative w-32 h-32 mb-8">
+        <div class="absolute inset-0 border-4 border-green-500/30 rounded-full animate-ping"></div>
+        <div class="absolute inset-0 border-4 border-t-green-500 border-r-transparent border-b-green-500 border-l-transparent rounded-full animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+            <i class="fas fa-user-secret text-4xl text-green-500 animate-pulse"></i>
+        </div>
+    </div>
+    
+    <h2 class="text-2xl font-bold mb-2 text-green-500 glitch" data-text="INFILTRATING_TARGET">INFILTRATING_TARGET</h2>
+    <p class="text-green-700 mb-8 blink" id="scan-status-text">INITIALIZING_VECTORS...</p>
+    
+    <div class="w-full max-w-md bg-green-900/20 border border-green-900 h-4 mb-4 overflow-hidden relative">
+        <div class="h-full bg-green-500 shadow-[0_0_10px_#0f0]" id="progress-fill" style="width: 0%"></div>
+    </div>
+    
+    <div class="w-full max-w-lg mt-8 text-xs text-green-800 font-mono text-left p-4 border border-green-900/50 bg-black">
+        <div id="terminal-logs">
+            <div class="mb-1">> SYSTEM_READY</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Selection Styling for Hacker Radio Buttons
 document.querySelectorAll('.quick-type-option input[type="radio"]').forEach(radio => {
     radio.addEventListener('change', function() {
         document.querySelectorAll('.quick-type-option').forEach(opt => {
-            opt.classList.remove('border-primary', 'ring-2', 'ring-primary/20');
+            opt.classList.remove('border-green-500', 'shadow-[0_0_10px_rgba(0,255,0,0.2)]', 'bg-green-900/10');
+            opt.querySelector('span').classList.remove('text-green-400');
+            opt.querySelector('i').classList.remove('text-green-400');
         });
         if (this.checked) {
-            this.closest('.quick-type-option').classList.add('border-primary', 'ring-2', 'ring-primary/20');
+            const container = this.closest('.quick-type-option');
+            container.classList.add('border-green-500', 'shadow-[0_0_10px_rgba(0,255,0,0.2)]', 'bg-green-900/10');
+            container.querySelector('span').classList.add('text-green-400');
+            container.querySelector('i').classList.add('text-green-400');
         }
     });
 });
 
-// Quick scan form submit handler
 document.getElementById('quick-scan-form').addEventListener('submit', function(e) {
     const overlay = document.getElementById('scan-overlay');
     const progress = document.getElementById('progress-fill');
     const status = document.getElementById('scan-status-text');
+    const logs = document.getElementById('terminal-logs');
     
     overlay.classList.remove('hidden');
     overlay.classList.add('flex');
     
     let w = 0;
-    setInterval(() => {
-        w += Math.random() * 8;
-        if(w > 90) w = 90;
-        progress.style.width = w + '%';
-        status.innerText = 'Running quick lookup...';
-    }, 300);
-});
-
-document.getElementById('scan-form').addEventListener('submit', function(e) {
-    // e.preventDefault(); // Uncomment only for debugging UI without submitting
-    const btn = document.getElementById('submit-btn');
-    const overlay = document.getElementById('scan-overlay');
-    const progress = document.getElementById('progress-fill');
-    const status = document.getElementById('scan-status-text');
+    const logMessages = [
+        "> CONNECTING_TO_DARKNET_RELAYS...",
+        "> BYPASSING_FIREWALLS...",
+        "> SCRAPING_PUBLIC_LEDGERS...",
+        "> CROSS_REFERENCING_LEAK_DBS...",
+        "> DECRYPTING_METADATA...",
+        "> ASSEMBLING_PROFILE..."
+    ];
     
-    overlay.classList.remove('hidden');
-    overlay.classList.add('flex');
-    
-    let w = 0;
+    // Hacker Progress Animation
     const interval = setInterval(() => {
-        w += Math.random() * 5;
-        if(w > 90) w = 90; // Stall at 90% until page reload
+        w += Math.random() * 4;
+        if(w > 95) w = 95; // Wait for server redirect
         progress.style.width = w + '%';
         
-        if(w > 20) { status.innerText = 'Querying breach databases (HaveIBeenPwned)...'; hl(1); }
-        if(w > 50) { status.innerText = 'Scraping social media profiles...'; hl(2); }
-        if(w > 80) { status.innerText = 'Correlating data points...'; hl(3); }
+        // Random Hex Decrypt Effect
+        const chars = "0123456789ABCDEF";
+        const randomHex = Array(8).fill(0).map(()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+        status.innerHTML = `DECRYPTING_BLOCK: 0x${randomHex}`;
         
-    }, 500);
-    
-    function hl(step) {
-        document.querySelectorAll('.step').forEach((el, idx) => {
-            if(idx < step) el.classList.add('text-primary');
-        });
-    }
+        // Add Logs
+        if (Math.random() > 0.85) {
+            const msg = logMessages[Math.floor(Math.random() * logMessages.length)];
+            const div = document.createElement('div');
+            div.className = "mb-1 text-green-500";
+            div.innerText = msg;
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+    }, 100);
 });
 </script>
 {% endblock %}

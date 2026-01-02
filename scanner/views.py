@@ -27,68 +27,95 @@ from scanner.services.breach_check import BreachChecker
 def new_scan(request):
     """Create a new scan - mirrors Flask new_scan route."""
     if request.method == 'POST':
-        # Check if this is a Quick Lookup scan
+        # Get all raw inputs first
         scan_mode = request.POST.get('scan_mode', 'comprehensive')
+        quick_type = request.POST.get('quick_type', '')
+        quick_value = request.POST.get('quick_value', '').strip()
         
-        if scan_mode == 'quick':
-            # Quick scan: only one field
-            quick_type = request.POST.get('quick_type', '')
-            quick_value = request.POST.get('quick_value', '').strip()
-            
-            if not quick_type or not quick_value:
-                messages.error(request, 'Please select a scan type and enter a value.')
-                return render(request, 'scan_form.html')
-            
-            # Map quick type to form field
-            name = quick_value if quick_type == 'name' else None
-            email = quick_value if quick_type == 'email' else None
-            username = quick_value if quick_type == 'username' else None
-            phone = quick_value if quick_type == 'phone' else None
-            domain = quick_value if quick_type == 'domain' else None
-            ip = quick_value if quick_type == 'ip' else None
-            social_platforms = []
-        else:
-            # Comprehensive scan: get all form data
-            name = request.POST.get('name', '').strip() or None
-            email = request.POST.get('email', '').strip() or None
-            username = request.POST.get('username', '').strip() or None
-            phone = request.POST.get('phone', '').strip() or None
-            domain = request.POST.get('domain', '').strip() or None
-            ip = request.POST.get('ip', '').strip() or None
-            social_platforms = request.POST.getlist('social_platforms')
+        # Initialize fields from Comprehensive/Advanced inputs
+        name = request.POST.get('name', '').strip() or None
+        email = request.POST.get('email', '').strip() or None
+        username = request.POST.get('username', '').strip() or None
+        phone = request.POST.get('phone', '').strip() or None
+        domain = request.POST.get('domain', '').strip() or None
+        ip = request.POST.get('ip', '').strip() or None
+        social_platforms = request.POST.getlist('social_platforms')
         
+        # ===== INTELLIGENT MERGE LOGIC =====
+        # Strategy: Quick Value fills GAPS. It does NOT overwrite existing Dossier data.
+        # This allows "Full Dossier + Quick Lookup" to work together.
+        
+        if quick_value:
+            import re
+            
+            # 1. Trust User Selection if explicit
+            if quick_type:
+                if quick_type == 'email' and not email: email = quick_value
+                elif quick_type == 'username' and not username: username = quick_value
+                elif quick_type == 'phone' and not phone: phone = quick_value
+                elif quick_type == 'domain' and not domain: domain = quick_value
+                elif quick_type == 'ip' and not ip: ip = quick_value
+            
+            # 2. Auto-Detect (Smart Inference)
+            else:
+                # IPv4 Pattern - High Confidence
+                if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", quick_value):
+                    if not ip: ip = quick_value
+                
+                # Email Pattern - High Confidence
+                elif re.match(r"[^@]+@[^@]+\.[^@]+", quick_value):
+                    if not email: email = quick_value
+                
+                # Phone Pattern - Medium Confidence
+                elif re.match(r"^[\d\+\-\(\)\s]{7,}$", quick_value):
+                    if not phone: phone = quick_value
+                
+                # Domain vs Username - The Ambiguous Zone (e.g. josepha.mayo)
+                # Heuristic: Domains usually have 2+ chars in TLD, but usernames can have dots.
+                # Default preference: If it lacks http/www/common TLD indicators, treat as USERNAME.
+                elif re.match(r"^(https?://|www\.)", quick_value) or re.search(r"\.(com|net|org|io|co|us|uk|gov|edu|info|biz|me|tv)$", quick_value, re.IGNORECASE):
+                     if not domain: domain = quick_value
+                
+                # Fallback: Everything else is likely a Name/Handle/Username
+                else:
+                    if not username: username = quick_value
+
+        # Basic Check: Must have at least one field
         if not any([name, email, username, phone, domain, ip]):
-            messages.error(request, 'Please provide at least one field to scan.')
+            messages.error(request, 'Please provide at least one target identifier.')
             return render(request, 'scan_form.html')
 
-        # Input Validation (Regex)
+        # ===== STRICT VALIDATION (Per User Request) =====
         import re
         
-        # Email Validation
-        if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-             messages.error(request, 'Invalid email address format.')
-             return render(request, 'scan_form.html')
-        
-        # Phone Validation (allow +, -, digits, space, parens)
-        if phone and not re.match(r"^[\d\+\-\(\)\s]+$", phone):
-             messages.error(request, 'Invalid phone number format.')
-             return render(request, 'scan_form.html')
-             
-        # Domain Validation
-        if domain and not re.match(r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$", domain):
-             messages.error(request, 'Invalid domain format.')
-             return render(request, 'scan_form.html')
-             
-        # IP Validation (IPv4)
-        if ip and not re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", ip):
-             messages.error(request, 'Invalid IP address format.')
-             return render(request, 'scan_form.html')
-             
-        # Username Validation (Alphanumeric + underscore/dash/dot)
-        if username and not re.match(r"^[a-zA-Z0-9_\-\.]+$", username):
-             messages.error(request, 'Invalid username format.')
-             return render(request, 'scan_form.html')
-        
+        # 1. IP Validation (STRICT)
+        if ip:
+            if not re.match(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", ip):
+                messages.error(request, f'Strict Error: "{ip}" is not a valid IPv4 address.')
+                return render(request, 'scan_form.html')
+
+        # 2. Email Validation (STRICT)
+        if email:
+            if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email):
+                messages.error(request, f'Strict Error: "{email}" is not a valid email address.')
+                return render(request, 'scan_form.html')
+
+        # 3. Domain Validation (STRICT)
+        if domain:
+            if re.match(r"^https?://", domain):
+                 messages.error(request, f'Strict Error: Please remove http/https protocol from domain "{domain}".')
+                 return render(request, 'scan_form.html')
+            
+            if not re.match(r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$", domain):
+                 messages.error(request, f'Strict Error: "{domain}" is not a valid domain name.')
+                 return render(request, 'scan_form.html')
+
+        # 4. Phone Validation (Semi-Strict: Must have digits)
+        if phone:
+            if not re.search(r"\d", phone) or not re.match(r"^[\d\+\-\(\)\s\.]+$", phone):
+                 messages.error(request, f'Strict Error: "{phone}" is not a valid phone number.')
+                 return render(request, 'scan_form.html')
+
         # Create scan record
         scan = ScanHistory(
             user=request.user,

@@ -30,103 +30,102 @@
         </div>
     </div>
 
-    <!-- Overview Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Overview Grid (HACKER THEME) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 font-mono">
         <!-- Main Score Card -->
         {% with risk_score=scan.risk_score %}
-        <div class="card lg:col-span-1 flex flex-col items-center justify-center relative overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-background/50 pointer-events-none"></div>
-            <h3 class="text-sm font-medium text-muted uppercase tracking-wider mb-6">Digital Risk Score</h3>
+        <div class="lg:col-span-1 flex flex-col items-center justify-center relative overflow-hidden border border-green-500/30 bg-black p-6 shadow-[0_0_15px_rgba(0,255,0,0.1)]">
+            <div class="absolute inset-0 bg-[url('https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif')] opacity-[0.03] pointer-events-none"></div>
+            <h3 class="text-xs font-bold text-green-500 uppercase tracking-widest mb-6 glitch" data-text="THREAT_INDEX">THREAT_INDEX_SCORE</h3>
             
             <div class="relative w-48 h-48 mb-4">
                 <svg viewBox="0 0 100 100" class="w-full h-full rotate-[-90deg]">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" class="text-secondary" stroke-width="8"/>
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#112211" stroke-width="6"/>
                     <circle cx="50" cy="50" r="45" fill="none" 
-                        stroke="{% if risk_score <= 30 %}#10b981{% elif risk_score <= 70 %}#f59e0b{% else %}#ef4444{% endif %}" 
-                        stroke-width="8" 
+                        stroke="{% if risk_score <= 30 %}#00ff00{% elif risk_score <= 70 %}#ffff00{% else %}#ff0000{% endif %}" 
+                        stroke-width="6" 
                         stroke-dasharray="{{ risk_score }} 283"
-                        stroke-linecap="round"
-                        class="text-primary transition-all duration-1000 ease-out" />
+                        stroke-linecap="butt"
+                        class="drop-shadow-[0_0_5px_rgba(0,255,0,0.5)] transition-all duration-1000 ease-out" />
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <span class="text-5xl font-bold tracking-tighter">{{ risk_score }}</span>
-                    <span class="text-xs text-muted uppercase mt-1">/ 100</span>
+                    <span class="text-5xl font-bold tracking-tighter text-white">{{ risk_score }}</span>
+                    <span class="text-[10px] text-green-700 uppercase mt-1">/ 100 MAX</span>
                 </div>
             </div>
 
-            <div class="px-3 py-1 rounded-full text-sm font-semibold border
-                {% if risk_score <= 30 %}bg-green-500/10 text-green-500 border-green-500/20
-                {% elif risk_score <= 70 %}bg-yellow-500/10 text-yellow-500 border-yellow-500/20
-                {% else %}bg-destructive/10 text-destructive border-destructive/20{% endif %}">
-                {% if risk_score <= 30 %}<i class="fas fa-shield-alt mr-1"></i> Low Risk
-                {% elif risk_score <= 70 %}<i class="fas fa-exclamation-circle mr-1"></i> Medium Risk
-                {% else %}<i class="fas fa-biohazard mr-1"></i> High Risk{% endif %}
+            <div class="px-4 py-1 border border-green-900 bg-green-900/10 text-xs font-bold uppercase tracking-widest text-green-500">
+                {% if risk_score <= 30 %}<i class="fas fa-shield-alt mr-1"></i> STATUS: SECURE
+                {% elif risk_score <= 70 %}<i class="fas fa-exclamation-triangle mr-1"></i> STATUS: ELEVATED
+                {% else %}<i class="fas fa-biohazard mr-1"></i> STATUS: CRITICAL{% endif %}
             </div>
         </div>
         {% endwith %}
 
         <!-- Target Details & Stats -->
-        <div class="card lg:col-span-2 flex flex-col justify-between">
+        <div class="lg:col-span-2 flex flex-col justify-between border border-green-500/30 bg-black p-6 relative">
             <div>
-                <h3 class="text-lg font-semibold mb-4 border-b border-border pb-2">Target Profile</h3>
+                <h3 class="text-lg font-bold text-green-500 mb-6 border-b border-green-900 pb-2 flex items-center gap-2">
+                    <i class="fas fa-crosshairs"></i> TARGET_DOSSIER
+                </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                    <div class="flex items-center gap-3 p-3 border border-green-900 bg-green-900/5 hover:bg-green-900/10 transition-colors">
+                        <div class="w-10 h-10 flex items-center justify-center text-green-500 border border-green-500/30 bg-black">
                             <i class="fas fa-id-card"></i>
                         </div>
-                        <div>
-                            <p class="text-xs text-muted uppercase">Name</p>
-                            <p class="font-medium truncate">{{ scan.name|default:"N/A" }}</p>
+                        <div class="overflow-hidden">
+                            <p class="text-[10px] text-green-700 uppercase">Subject_Name</p>
+                            <p class="font-bold text-green-400 truncate text-sm">{{ scan.name|default:"N/A" }}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                    <div class="flex items-center gap-3 p-3 border border-green-900 bg-green-900/5 hover:bg-green-900/10 transition-colors">
+                        <div class="w-10 h-10 flex items-center justify-center text-green-500 border border-green-500/30 bg-black">
                             <i class="fas fa-globe"></i>
                         </div>
-                        <div>
-                            <p class="text-xs text-muted uppercase">Domain/IP</p>
-                            <p class="font-medium truncate">{{ scan.domain|default:scan.ip|default:"N/A" }}</p>
+                        <div class="overflow-hidden">
+                            <p class="text-[10px] text-green-700 uppercase">Infra_Domain/IP</p>
+                            <p class="font-bold text-green-400 truncate text-sm">{{ scan.domain|default:scan.ip|default:"N/A" }}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                    <div class="flex items-center gap-3 p-3 border border-green-900 bg-green-900/5 hover:bg-green-900/10 transition-colors">
+                        <div class="w-10 h-10 flex items-center justify-center text-green-500 border border-green-500/30 bg-black">
                             <i class="fas fa-envelope"></i>
                         </div>
-                        <div>
-                            <p class="text-xs text-muted uppercase">Email</p>
-                            <p class="font-medium truncate">{{ scan.email|default:"N/A" }}</p>
+                        <div class="overflow-hidden">
+                            <p class="text-[10px] text-green-700 uppercase">Comms_Email</p>
+                            <p class="font-bold text-green-400 truncate text-sm">{{ scan.email|default:"N/A" }}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                        <div class="w-10 h-10 rounded bg-background flex items-center justify-center text-primary">
+                    <div class="flex items-center gap-3 p-3 border border-green-900 bg-green-900/5 hover:bg-green-900/10 transition-colors">
+                        <div class="w-10 h-10 flex items-center justify-center text-green-500 border border-green-500/30 bg-black">
                             <i class="fas fa-at"></i>
                         </div>
-                        <div>
-                            <p class="text-xs text-muted uppercase">Username</p>
-                            <p class="font-medium truncate">{{ scan.username|default:"N/A" }}</p>
+                        <div class="overflow-hidden">
+                            <p class="text-[10px] text-green-700 uppercase">Social_Handle</p>
+                            <p class="font-bold text-green-400 truncate text-sm">{{ scan.username|default:"N/A" }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {% if risk_breakdown %}
-            <div class="grid grid-cols-2 gap-4 border-t border-border pt-4">
+            <div class="grid grid-cols-2 gap-4 border-t border-green-900 pt-4">
                 <div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-sm font-medium">Public Exposure</span>
-                        <span class="text-sm font-bold text-primary">{{ risk_breakdown.public_exposure.score }}/50</span>
+                        <span class="text-xs font-bold text-green-600 uppercase">Public_Exposure</span>
+                        <span class="text-xs font-bold text-green-400">{{ risk_breakdown.public_exposure.score }}/50</span>
                     </div>
-                    <div class="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                        <div class="bg-primary h-full rounded-full" style="width: {{ risk_breakdown.public_exposure.score|add:risk_breakdown.public_exposure.score }}%"></div>
+                    <div class="w-full bg-green-900/20 h-1.5 overflow-hidden">
+                        <div class="bg-green-500 h-full shadow-[0_0_5px_#0f0]" style="width: {{ risk_breakdown.public_exposure.score|add:risk_breakdown.public_exposure.score }}%"></div>
                     </div>
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-sm font-medium">Sensitive Data</span>
-                        <span class="text-sm font-bold text-destructive">{{ risk_breakdown.sensitive_exposure.score }}/50</span>
+                        <span class="text-xs font-bold text-green-600 uppercase">Sensitive_Data</span>
+                        <span class="text-xs font-bold text-red-500">{{ risk_breakdown.sensitive_exposure.score }}/50</span>
                     </div>
-                    <div class="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                        <div class="bg-destructive h-full rounded-full" style="width: {{ risk_breakdown.sensitive_exposure.score|add:risk_breakdown.sensitive_exposure.score }}%"></div>
+                    <div class="w-full bg-green-900/20 h-1.5 overflow-hidden">
+                        <div class="bg-red-500 h-full shadow-[0_0_5px_#f00]" style="width: {{ risk_breakdown.sensitive_exposure.score|add:risk_breakdown.sensitive_exposure.score }}%"></div>
                     </div>
                 </div>
             </div>
