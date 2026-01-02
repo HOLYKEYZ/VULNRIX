@@ -57,10 +57,37 @@ def new_scan(request):
             ip = request.POST.get('ip', '').strip() or None
             social_platforms = request.POST.getlist('social_platforms')
         
-        # Validate at least one field
         if not any([name, email, username, phone, domain, ip]):
             messages.error(request, 'Please provide at least one field to scan.')
             return render(request, 'scan_form.html')
+
+        # Input Validation (Regex)
+        import re
+        
+        # Email Validation
+        if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+             messages.error(request, 'Invalid email address format.')
+             return render(request, 'scan_form.html')
+        
+        # Phone Validation (allow +, -, digits, space, parens)
+        if phone and not re.match(r"^[\d\+\-\(\)\s]+$", phone):
+             messages.error(request, 'Invalid phone number format.')
+             return render(request, 'scan_form.html')
+             
+        # Domain Validation
+        if domain and not re.match(r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$", domain):
+             messages.error(request, 'Invalid domain format.')
+             return render(request, 'scan_form.html')
+             
+        # IP Validation (IPv4)
+        if ip and not re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", ip):
+             messages.error(request, 'Invalid IP address format.')
+             return render(request, 'scan_form.html')
+             
+        # Username Validation (Alphanumeric + underscore/dash/dot)
+        if username and not re.match(r"^[a-zA-Z0-9_\-\.]+$", username):
+             messages.error(request, 'Invalid username format.')
+             return render(request, 'scan_form.html')
         
         # Create scan record
         scan = ScanHistory(

@@ -380,7 +380,8 @@ int compute_file_hashes(const char* filename, hash_result_t* result) {
     bytes_to_hex(sha256_digest, 32, result->sha256);
     
     /* SHA1 placeholder - would need full implementation */
-    strcpy(result->sha1, "not_implemented");
+    strncpy(result->sha1, "not_implemented", sizeof(result->sha1) - 1);
+    result->sha1[sizeof(result->sha1) - 1] = '\0';
     
     return 0;
 }

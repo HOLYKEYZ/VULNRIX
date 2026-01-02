@@ -225,7 +225,9 @@ int check_password_hibp(const char* password, breach_result_t* result) {
     
     memset(result, 0, sizeof(breach_result_t));
     strncpy(result->input, "********", sizeof(result->input) - 1);  /* Don't store password */
-    strcpy(result->source, "hibp_kanon");
+    result->input[sizeof(result->input) - 1] = '\0';
+    strncpy(result->source, "hibp_kanon", sizeof(result->source) - 1);
+    result->source[sizeof(result->source) - 1] = '\0';
     
     /* Compute SHA1 */
     sha1_string(password, hash);
@@ -234,7 +236,8 @@ int check_password_hibp(const char* password, breach_result_t* result) {
     /* Extract prefix and suffix */
     strncpy(prefix, hash, 5);
     prefix[5] = '\0';
-    strcpy(suffix, hash + 5);
+    strncpy(suffix, hash + 5, sizeof(suffix) - 1);
+    suffix[sizeof(suffix) - 1] = '\0';
     strncpy(result->sha1_prefix, prefix, 5);
     
     printf("[*] Checking hash prefix: %s...\n", prefix);
@@ -278,7 +281,8 @@ int check_email_local(const char* email, const char* db_path, breach_result_t* r
     sha1_string(email_lower, hash);
     strncpy(result->sha1_hash, hash, 40);
     strncpy(result->sha1_prefix, hash, 5);
-    strcpy(result->source, "local_db");
+    strncpy(result->source, "local_db", sizeof(result->source) - 1);
+    result->source[sizeof(result->source) - 1] = '\0';
     
     /* Check against local database */
     fp = fopen(db_path, "r");
