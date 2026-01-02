@@ -148,7 +148,7 @@ void sha1_string(const char* str, char* hash_out) {
     sha1_final(digest, &ctx);
     
     for (int i = 0; i < 20; i++) {
-        sprintf(hash_out + i * 2, "%02X", digest[i]);
+        snprintf(hash_out + i * 2, 3, "%02X", digest[i]); // 3 bytes: 2 hex chars + null (overwritten next)
     }
     hash_out[40] = '\0';
 }

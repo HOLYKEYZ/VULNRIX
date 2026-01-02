@@ -320,7 +320,7 @@ void sha256_final(uint8_t hash[32], SHA256_CTX* ctx) {
  */
 void bytes_to_hex(const uint8_t* bytes, int len, char* hex) {
     for (int i = 0; i < len; i++) {
-        sprintf(hex + i * 2, "%02x", bytes[i]);
+        snprintf(hex + i * 2, 3, "%02x", bytes[i]);
     }
     hex[len * 2] = '\0';
 }

@@ -20,8 +20,39 @@ def clone_repo(repo_url: str, target_dir: str) -> Tuple[bool, str]:
     """
     try:
         # Security check: Ensure URL is valid (basic check)
+        # Security check: Ensure URL is valid and public
         if not repo_url.startswith(('http://', 'https://')):
             return False, "Invalid Protocol: URL must start with http:// or https://"
+        
+        # SSRF Protection: Block private IPs and localhost
+        from urllib.parse import urlparse
+        import socket
+        
+        try:
+            domain = urlparse(repo_url).hostname
+            if not domain:
+                return False, "Invalid URL"
+            
+            # Resolve IP
+            ip = socket.gethostbyname(domain)
+            
+            # Check for private blocks
+            parts = ip.split('.')
+            if (ip.startswith('127.') or 
+                ip.startswith('10.') or 
+                (ip.startswith('192.168.')) or
+                (ip.startswith('172.') and 16 <= int(parts[1]) <= 31) or
+                ip == '0.0.0.0'):
+                return False, "Security Error: Internal/Private URLs are not allowed"
+        except Exception:
+            # If we can't resolve it, it might be an internal name or invalid
+            # Let git try? No, 'fail closed' is safer for SSRF.
+            # But what if DNS is flaky? 
+            # We'll assume if gethostbyname fails, git will probably fail too.
+            # But git might use a different resolver?
+            # Safer to allow if resolution fails (git will handle) OR block?
+            # Block to be safe against complex DNS rebinding or internal names.
+            return False, "Security Error: Cannot resolve hostname"
             
         # Run git clone --depth 1
         cmd = ['git', 'clone', '--depth', '1', repo_url, target_dir]
