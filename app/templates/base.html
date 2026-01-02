@@ -140,16 +140,6 @@
             </div>
 
             <div class="sidebar-section">
-                <div class="sidebar-section-title">OSINT SCANNER</div>
-                <a href="{% url 'scanner:new_scan' %}" class="sidebar-link {% if 'scan/new' in request.path %}active{% endif %}">
-                    <i class="fas fa-search w-4"></i> New OSINT Scan
-                </a>
-                <a href="{% url 'scanner:dashboard' %}" class="sidebar-link {% if 'footprint' in request.path %}active{% endif %}">
-                    <i class="fas fa-globe w-4"></i> Digital Footprint
-                </a>
-            </div>
-
-            <div class="sidebar-section">
                 <div class="sidebar-section-title">DEV TOOLS</div>
                 <a href="{% url 'vuln_scan:dashboard' %}" class="sidebar-link">
                     <i class="fas fa-code w-4"></i> Code Scanner
@@ -159,6 +149,16 @@
                 </a>
                 <a href="{% url 'vuln_scan:virustotal' %}" class="sidebar-link {% if 'virustotal' in request.path %}active{% endif %}">
                     <i class="fas fa-virus w-4"></i> VirusTotal Check
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">OSINT SCANNER</div>
+                <a href="{% url 'scanner:new_scan' %}" class="sidebar-link {% if 'scan/new' in request.path %}active{% endif %}">
+                    <i class="fas fa-search w-4"></i> New OSINT Scan
+                </a>
+                <a href="{% url 'scanner:dashboard' %}" class="sidebar-link {% if 'footprint' in request.path %}active{% endif %}">
+                    <i class="fas fa-globe w-4"></i> Digital Footprint
                 </a>
             </div>
 

@@ -653,5 +653,128 @@ tr:hover { background-color: hsl(var(--muted) / 0.5); }
     right: 0;
     height: 3px;
     background: linear-gradient(90deg, #00d4d4, transparent);
-    border-radius: 0 0 var(--radius) var(--radius);
+/* ==========================================================================
+   HACKER THEME (DARKWEB OSINT VIBE)
+   ========================================================================== */
+.hacker-theme {
+    /* Hacker Palette Override */
+    --background: 0 0% 2%;    /* Deep Black #050505 */
+    --foreground: 120 100% 50%; /* Neon Green #00ff00 */
+    --card: 0 0% 0%;          /* Pure Black */
+    --card-foreground: 120 100% 50%;
+    --primary: 120 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --muted: 120 30% 10%;     /* Dark Green background */
+    --muted-foreground: 120 40% 50%; /* Dim Green */
+    --border: 120 100% 50%;   /* Green Borders */
+    --input: 120 50% 20%;
+    
+    background-color: #000;
+    color: #0f0;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* Force Monospace everywhere inside hacker theme */
+.hacker-theme * {
+    font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+}
+
+/* Glowing Text */
+.hacker-theme h1, 
+.hacker-theme h2, 
+.hacker-theme h3,
+.hacker-theme .text-primary,
+.hacker-theme .sidebar-link.active {
+    color: #0f0 !important;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+}
+
+/* Terminal Cards */
+.hacker-theme .card {
+    background: #050505;
+    border: 1px solid #0f0;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+    border-radius: 4px; /* More blocky */
+}
+
+/* Buttons */
+.hacker-theme .btn--primary {
+    background: transparent;
+    border: 1px solid #0f0;
+    color: #0f0;
+    box-shadow: 0 0 5px #0f0;
+    text-transform: uppercase;
+}
+.hacker-theme .btn--primary:hover {
+    background: #0f0;
+    color: #000;
+}
+
+/* Inputs */
+.hacker-theme input, 
+.hacker-theme select, 
+.hacker-theme textarea {
+    background: #000;
+    border: 1px solid #005f00;
+    color: #0f0;
+    border-radius: 0;
+}
+.hacker-theme input:focus {
+    border-color: #0f0;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+/* CRT Scanline Effect Overlay */
+.scanline {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.2) 50%,
+        rgba(0,0,0,0.2)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.15;
+}
+
+/* Glitch Animation */
+@keyframes glitch {
+    0% { transform: translate(0) }
+    20% { transform: translate(-2px, 2px) }
+    40% { transform: translate(-2px, -2px) }
+    60% { transform: translate(2px, 2px) }
+    80% { transform: translate(2px, -2px) }
+    100% { transform: translate(0) }
+}
+.glitch:hover {
+    animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+    color: #fff !important;
+    text-shadow: 2px 0 #f00, -2px 0 #00f;
+}
+
+/* Status Badges Override */
+.hacker-theme .badge {
+    border: 1px solid currentColor;
+    background: transparent !important;
+    border-radius: 2px;
+}
+.hacker-theme .badge--risk-low { color: #0f0; border-color: #0f0; }
+.hacker-theme .badge--risk-high { color: #f00 !important; border-color: #f00; text-shadow: 0 0 5px #f00; }
+
+/* Separator Line */
+.hacker-theme .gradient-accent-bar {
+    background: #0f0;
+    box-shadow: 0 0 10px #0f0;
+}
+
+/* Charts Recolor (Make sure JS uses darker greens) */
+.hacker-theme canvas {
+    filter: sepia(100%) hue-rotate(50deg) saturate(500%) brightness(0.8);
 }
