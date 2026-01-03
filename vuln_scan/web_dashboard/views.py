@@ -123,7 +123,7 @@ def get_last_scan(user):
     """Get the last scan for a user."""
     try:
         from .models import CodeScanHistory
-        return CodeScanHistory.objects.filter(user=user).first()
+        return CodeScanHistory.objects.filter(user=user).order_by('-created_at').first()
     except Exception as e:
         logger.error(f"[VULNRIX] Failed to get last scan: {e}")
         return None
@@ -253,13 +253,56 @@ def dashboard(request):
             
             # Code Analysis Pipeline
             pipeline = get_pipeline()
+            
+            # Retry once if pipeline fails to initialize (fixes first-scan race condition)
+            if pipeline is None:
+                logger.warning("[VULNRIX] Pipeline was None, retrying initialization...")
+                import time
+                time.sleep(0.5)
+                pipeline = get_pipeline()
+                
             if pipeline is None:
                 raise Exception("Scanner engine unavailable (Import Error)")
             
             logger.info(f"[VULNRIX] Starting pipeline scan...")
             start_time = time.time()
+            
+            # --- SNYK FIRST-PASS ANALYSIS ---
+            snyk_result = None
+            try:
+                from scanner.services.snyk_service import get_snyk_service
+                snyk = get_snyk_service()
+                if snyk.is_configured():
+                    logger.info("[VULNRIX] Running Snyk first-pass analysis...")
+                    # Determine language from extension
+                    lang_map = {
+                        '.py': 'python', '.js': 'javascript', '.ts': 'typescript',
+                        '.java': 'java', '.go': 'go', '.rb': 'ruby', '.php': 'php',
+                        '.c': 'c', '.cpp': 'cpp', '.rs': 'rust', '.cs': 'csharp'
+                    }
+                    language = lang_map.get(ext.lower(), 'python')
+                    snyk_result = snyk.analyze_code(code, language, filename)
+                    logger.info(f"[VULNRIX] Snyk analysis: {snyk_result.get('status', 'N/A')}")
+                else:
+                    logger.info("[VULNRIX] Snyk not configured, skipping first-pass")
+            except Exception as snyk_err:
+                logger.warning(f"[VULNRIX] Snyk analysis failed (non-blocking): {snyk_err}")
+            
+            # --- LOCAL PIPELINE ANALYSIS ---
             result = pipeline.scan_file(tmp_path, mode=mode)
             duration = time.time() - start_time
+            
+            # Merge Snyk findings into result
+            if snyk_result and snyk_result.get('findings'):
+                existing_findings = result.get('findings', [])
+                snyk_findings = snyk_result.get('findings', [])
+                # Add source tag to differentiate
+                for f in snyk_findings:
+                    f['source'] = 'snyk'
+                # Prepend Snyk findings (they come first as "external validation")
+                result['findings'] = snyk_findings + existing_findings
+                result['snyk_summary'] = snyk_result.get('summary', {})
+                logger.info(f"[VULNRIX] Merged {len(snyk_findings)} Snyk findings")
             
             # Enrich result
             result["scan_duration"] = round(duration, 2)

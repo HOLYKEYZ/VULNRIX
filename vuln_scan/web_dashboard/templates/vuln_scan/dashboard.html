@@ -58,7 +58,7 @@
         </div>
         <div class="card p-4">
             <p class="text-xs text-muted uppercase tracking-wider mb-1">Last Scan</p>
-            <div class="font-mono text-lg" id="lastScan">{% if last_scan %}{{ last_scan.created_at|date:"H:i" }}{% else %}--:--{% endif %}</div>
+            <div class="font-mono text-lg" id="lastScan">{% if last_scan %}{{ last_scan.created_at|date:"M d, H:i" }}{% else %}--{% endif %}</div>
         </div>
         <div class="card p-4">
             <p class="text-xs text-muted uppercase tracking-wider mb-1">Issues Found</p>
