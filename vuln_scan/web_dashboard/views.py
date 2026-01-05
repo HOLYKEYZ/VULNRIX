@@ -120,10 +120,30 @@ def save_scan_history(user, filename, result, mode, file_hash=""):
 
 
 def get_last_scan(user):
-    """Get the last scan for a user."""
+    """Get the last scan (File or Project) for a user."""
     try:
-        from .models import CodeScanHistory
-        return CodeScanHistory.objects.filter(user=user).order_by('-created_at').first()
+        from .models import CodeScanHistory, ScanProject
+        
+        last_file = CodeScanHistory.objects.filter(user=user).order_by('-created_at').first()
+        last_proj = ScanProject.objects.filter(user=user).order_by('-created_at').first()
+        
+        if not last_file and not last_proj:
+            return None
+            
+        if last_file and not last_proj:
+            return last_file
+            
+        if last_proj and not last_file:
+            # Adapt project to look like history for template compatibility
+            last_proj.total_findings = last_proj.risk_score # approximate for now or add logic
+            return last_proj
+            
+        # Both exist, return newer
+        if last_proj.created_at > last_file.created_at:
+            last_proj.total_findings = last_proj.risk_score # hack compatibility
+            return last_proj
+            
+        return last_file
     except Exception as e:
         logger.error(f"[VULNRIX] Failed to get last scan: {e}")
         return None
@@ -670,7 +690,8 @@ def scan_next_file(request, project_id):
             "status": "PROCESSED",
             "filename": next_file.filename,
             "severity": next_file.severity,
-            "risk": next_file.risk_score
+            "risk": next_file.risk_score,
+            "findings": result.get('findings', [])
         })
         
     except Exception as e:
