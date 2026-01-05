@@ -1,16 +1,62 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Code & File Scanner - VULNRIX{% endblock %}
+{% block title %}Code Scanner - VULNRIX{% endblock %}
 
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+    /* Terminal Output Styles */
+    .terminal-window {
+        background-color: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 0.5rem;
+        font-family: 'JetBrains Mono', monospace;
+        color: #cccccc;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 350px;
+    }
+    .terminal-header {
+        background-color: #252526;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        color: #999;
+    }
+    .terminal-body {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+    }
+    .terminal-body::-webkit-scrollbar { width: 8px; }
+    .terminal-body::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    .terminal-body::-webkit-scrollbar-track { background: transparent; }
+    
+    .log-line { margin-bottom: 0.25rem; font-size: 0.8rem; line-height: 1.4; word-break: break-all; }
+    .log-info { color: #cccccc; }
+    .log-error { color: #f43f5e; font-weight: bold; }
+    .log-success { color: #10b981; }
+    .log-warn { color: #f59e0b; }
+    .log-snyk { color: #a78bfa; } /* Light purple for Snyk */
+    .log-time { color: #666; margin-right: 0.5rem; font-size: 0.7rem; }
+
+    /* Tab Customization */
+    .tab-btn.active {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto max-w-7xl pb-10">
+<div class="container mx-auto max-w-7xl pb-10 px-4">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 pt-6">
         <div>
             <div class="flex items-center gap-3 mb-2">
                 <div class="p-3 bg-teal-500/10 rounded-lg text-teal-500">
@@ -18,22 +64,22 @@
                 </div>
                 <div>
                     <h1 class="text-3xl font-bold tracking-tight">Code Scanner</h1>
-                    <p class="text-muted">Static Analysis & Vulnerability Detection</p>
+                    <p class="text-muted text-sm">Static Analysis & Vulnerability Detection</p>
                 </div>
             </div>
         </div>
         
         <!-- Scan Mode Selector -->
-        <div class="flex bg-muted p-1 rounded-lg" role="group" aria-label="Scan mode selection">
-            <button class="px-4 py-2 text-sm font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground hover:text-foreground" 
+        <div class="flex bg-muted p-1 rounded-lg" role="group">
+            <button class="px-4 py-2 text-xs font-bold uppercase rounded-md transition-all hover:text-white text-muted-foreground" 
                 onclick="setMode('fast')" id="btn-fast" data-state="inactive">
                 <i class="fas fa-bolt mr-2"></i> Fast
             </button>
-            <button class="px-4 py-2 text-sm font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground hover:text-foreground" 
+            <button class="px-4 py-2 text-xs font-bold uppercase rounded-md transition-all bg-teal-600 text-white shadow-sm" 
                 onclick="setMode('hybrid')" id="btn-hybrid" data-state="active">
                 <i class="fas fa-balance-scale mr-2"></i> Hybrid
             </button>
-            <button class="px-4 py-2 text-sm font-medium rounded-md transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground hover:text-foreground" 
+            <button class="px-4 py-2 text-xs font-bold uppercase rounded-md transition-all hover:text-white text-muted-foreground" 
                 onclick="setMode('deep')" id="btn-deep" data-state="inactive">
                 <i class="fas fa-brain mr-2"></i> Deep AI
             </button>
@@ -42,1028 +88,379 @@
     
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="card p-4">
+        <div class="card p-4 border border-border bg-card">
             <p class="text-xs text-muted uppercase tracking-wider mb-1">System Status</p>
-            <div class="flex items-center gap-2 text-success font-medium">
+            <div class="flex items-center gap-2 text-teal-500 font-medium text-sm">
                 <span class="relative flex h-2 w-2">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-500 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
                 </span>
-                Online
+                ONLINE
             </div>
         </div>
-        <div class="card p-4">
-            <p class="text-xs text-muted uppercase tracking-wider mb-1">Scan Mode</p>
-            <div class="font-bold text-lg" id="currentMode">Hybrid</div>
-        </div>
-        <div class="card p-4">
+        <div class="card p-4 border border-border bg-card">
             <p class="text-xs text-muted uppercase tracking-wider mb-1">Last Scan</p>
-            <div class="font-mono text-lg" id="lastScan">{% if last_scan %}{{ last_scan.created_at|date:"M d, H:i" }}{% else %}--{% endif %}</div>
+            <!-- Fixed Last Scan Time -->
+            <div class="font-mono text-lg text-foreground">{% if last_scan %}{{ last_scan.created_at|date:"M d, H:i" }}{% else %}--{% endif %}</div>
         </div>
-        <div class="card p-4">
+        <div class="card p-4 border border-border bg-card">
             <p class="text-xs text-muted uppercase tracking-wider mb-1">Issues Found</p>
-            <div class="font-bold text-lg text-teal-500" id="issuesCount">{% if last_scan %}{{ last_scan.total_findings }}{% else %}0{% endif %}</div>
+            <div class="font-bold text-lg text-teal-500" id="statIssues">
+                {% if last_scan %}{{ last_scan.total_findings }}{% else %}0{% endif %}
+            </div>
+        </div>
+        <div class="card p-4 border border-border bg-card">
+            <p class="text-xs text-muted uppercase tracking-wider mb-1">Files Scanned</p>
+            <div class="font-bold text-lg text-foreground">
+                {% if project_history %}{{ project_history.0.total_files }}{% else %}1{% endif %}
+            </div>
         </div>
     </div>
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Main Scanner Area -->
+        <!-- Main Scanner Area (Control Panel) -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Upload Zone -->
-            <div class="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-10 text-center cursor-pointer bg-muted/20 group relative overflow-hidden" 
-                 id="dropZone" role="button" tabindex="0">
-                <input type="file" id="fileInput" class="hidden" accept=".py,.js,.ts,.jsx,.tsx,.java,.go,.php,.rb,.c,.cpp,.h,.hpp,.cs,.swift,.kt,.rs,.sql,.sh,.yaml,.yml,.json,.xml,.html,.vue">
-                
-                <div class="pointer-events-none relative z-10">
-                    <div class="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                        <i class="fas fa-cloud-upload-alt text-2xl text-teal-500"></i>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Drop Source Code Here</h3>
-                    <p class="text-muted mb-6">or click to browse files</p>
-                    
-                    <div class="flex flex-wrap justify-center gap-2 max-w-md mx-auto">
-                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.py</span>
-                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.js</span>
-                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.go</span>
-                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.rs</span>
-                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">.c</span>
-                        <span class="px-2 py-1 rounded bg-background border border-border text-xs font-mono text-muted-foreground">+20 more</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Selected File & Actions -->
-            <div id="fileInfo" class="hidden animate-in fade-in slide-in-from-top-2">
-                <div class="card flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
-                    <div class="flex items-center gap-4 w-full sm:w-auto">
-                        <div class="w-12 h-12 rounded bg-teal-500/10 flex items-center justify-center text-teal-500 shrink-0">
-                            <i class="fas fa-file-code text-xl"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div id="selectedFileName" class="font-semibold truncate">filename.py</div>
-                            <div id="selectedFileSize" class="text-sm text-muted">0 KB</div>
-                        </div>
-                    </div>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <button class="btn btn--ghost flex-1 sm:flex-none" onclick="clearFile()">Cancel</button>
-                        <button class="btn btn--primary flex-1 sm:flex-none" id="scanBtn" onclick="startScan()">
-                            <i class="fas fa-search mr-2"></i> Start Scan
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Terminal Output -->
-            <div id="resultsArea" class="hidden space-y-6">
-                <div class="rounded-lg border border-border bg-[#0d1117] font-mono text-sm overflow-hidden shadow-2xl">
-                    <div class="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5">
-                        <div class="flex gap-2">
-                            <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-                            <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                            <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
-                        </div>
-                        <div class="text-xs text-gray-400">vulnrix-cli v2.0</div>
-                        <div id="scanTime" class="text-xs text-green-400"></div>
-                    </div>
-                    <div class="p-4 space-y-1 text-gray-300 max-h-[300px] overflow-y-auto custom-scrollbar" id="terminalOutput">
-                        <!-- Logs go here -->
-                    </div>
-                </div>
-
-                <!-- Detailed Findings -->
-                <div id="findingsContainer" class="space-y-4">
-                    <!-- Cards injected via JS -->
-                </div>
-            </div>
             
-            <!-- Repo Scan View (Hidden by default) -->
-            <div id="view-repo" class="hidden animate-in fade-in slide-in-from-top-2">
-                <div class="card p-8 text-center space-y-6">
-                    <div class="mx-auto w-16 h-16 rounded-full bg-teal-500/10 flex items-center justify-center mb-4">
-                        <i class="fab fa-github text-3xl text-teal-500"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold">Scan Repository or ZIP</h2>
-                    <p class="text-muted max-w-lg mx-auto">
-                        Enter a public GitHub/GitLab URL. We'll clone it and scan all supported code files.
-                    </p>
-                    <p class="text-xs text-muted-foreground max-w-lg mx-auto mt-2">
-                        <i class="fas fa-info-circle mr-1 text-primary"></i>
-                        Limit: <strong>50 files max</strong> • 200KB per file • Source code files only
-                    </p>
-                    
-                    <div class="flex gap-2 max-w-lg mx-auto">
-                        <input type="url" id="repoUrl" placeholder="https://github.com/username/repo.git" 
-                               class="flex-1 bg-background border border-border rounded-md px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-foreground">
-                        <button onclick="startRepoScan()" class="btn btn--primary px-6">
-                            <i class="fas fa-search mr-2"></i> Scan
-                        </button>
-                    </div>
-                    
-                    <!-- ZIP Upload Option -->
-                    <div class="text-muted text-sm">or</div>
-                    <div class="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-lg p-6 cursor-pointer max-w-lg mx-auto" id="zipDropZone">
-                        <input type="file" id="zipInput" class="hidden" accept=".zip">
-                        <i class="fas fa-file-archive text-2xl text-primary mb-2"></i>
-                        <p class="text-sm text-muted-foreground">Drop a ZIP file here</p>
-                    </div>
-                    
-                    <div id="projectProgress" class="hidden mt-8 max-w-lg mx-auto text-left">
-                        <div class="flex justify-between text-xs uppercase tracking-wider text-muted mb-2">
-                            <span>Scanning Project...</span>
-                            <span id="progressText">0/0 files</span>
-                        </div>
-                        <div class="h-2 bg-muted/30 rounded-full overflow-hidden">
-                            <div id="progressBar" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                        <div id="scanLogs" class="mt-4 h-32 overflow-y-auto font-mono text-xs text-muted-foreground bg-black/30 p-2 rounded border border-white/5 space-y-1 custom-scrollbar"></div>
-                    </div>
+            <!-- Input Card -->
+            <div class="card border border-border bg-card overflow-hidden">
+                <div class="flex border-b border-border">
+                    <button class="flex-1 py-3 text-sm font-medium border-b-2 border-teal-500 text-teal-500 transition-colors" id="tab-file" onclick="switchTab('file')">
+                        <i class="fas fa-file mr-2"></i> File / Zip
+                    </button>
+                    <button class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors" id="tab-repo" onclick="switchTab('repo')">
+                        <i class="fab fa-github mr-2"></i> Git Repo
+                    </button>
                 </div>
                 
-                <!-- Inline Repo Results Area (shown after scan completes) -->
-                <div id="repoResultsArea" class="hidden mt-6 space-y-6">
-                    <!-- Summary Stats -->
-                    <div class="card p-4">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-semibold flex items-center gap-2">
-                                <i class="fas fa-chart-bar text-primary"></i> Scan Summary
-                            </h3>
-                            <span id="repoResultName" class="text-xs text-muted font-mono truncate max-w-[200px]"></span>
-                        </div>
-                        <div class="grid grid-cols-3 gap-4 text-center">
-                            <div class="p-3 rounded bg-muted/30">
-                                <div class="text-xs text-muted uppercase">Files</div>
-                                <div id="repoResultFiles" class="text-2xl font-bold text-foreground">0</div>
+                <div class="p-6">
+                    <!-- FILE / ZIP UPLOAD -->
+                    <div id="panel-file" class="block">
+                        <div class="border-2 border-dashed border-border hover:border-teal-500/50 transition-colors rounded-xl p-10 text-center cursor-pointer bg-muted/20 group relative" 
+                             id="dropZone">
+                            <input type="file" id="fileInput" class="hidden" accept=".py,.js,.ts,.jsx,.tsx,.java,.go,.php,.rb,.c,.cpp,.h,.hpp,.cs,.swift,.kt,.rs,.sql,.sh,.yaml,.yml,.json,.xml,.html,.vue,.zip">
+                            
+                            <div class="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-teal-500"></i>
                             </div>
-                            <div class="p-3 rounded bg-muted/30">
-                                <div class="text-xs text-muted uppercase">Risk Score</div>
-                                <div id="repoResultScore" class="text-2xl font-bold text-primary">0</div>
-                            </div>
-                            <div class="p-3 rounded bg-muted/30">
-                                <div class="text-xs text-muted uppercase">Status</div>
-                                <div id="repoResultStatus" class="text-xl font-bold text-green-500">SAFE</div>
+                            <h3 class="text-lg font-semibold mb-1">Drop Source Code or Zip</h3>
+                            <p class="text-muted text-sm mb-4">Click to browse or drag file here</p>
+                            
+                            <div class="flex justify-center gap-2">
+                                <span class="badge badge--outline text-xs">.py</span>
+                                <span class="badge badge--outline text-xs">.js</span>
+                                <span class="badge badge--outline text-xs">.rs</span>
+                                <span class="badge badge--outline text-xs">.zip</span>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- File Results List -->
-                    <div class="card">
-                        <div class="flex items-center justify-between p-4 border-b border-border/50">
-                            <h4 class="font-semibold text-sm">Scanned Files</h4>
-                            <button onclick="toggleRepoDetails()" class="text-xs text-primary hover:underline">View All</button>
-                        </div>
-                        <div id="repoFilesList" class="divide-y divide-border/30 max-h-[400px] overflow-y-auto custom-scrollbar">
-                            <!-- File entries injected by JS -->
-                        </div>
-                    </div>
-                    
-                    <!-- File Detail View (shown when clicking a file) -->
-                    <div id="repoFileDetailView" class="hidden card p-4">
-                        <div class="flex items-center justify-between mb-4">
-                            <h4 id="repoFileDetailName" class="font-semibold text-sm font-mono"></h4>
-                            <button onclick="hideRepoFileDetail()" class="text-xs text-muted hover:text-foreground">
-                                <i class="fas fa-arrow-left mr-1"></i> Back to Files
-                            </button>
-                        </div>
-                        <div id="repoFileDetailFindings" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                            <!-- Detailed findings injected by JS -->
+                     <!-- REPO INPUT -->
+                    <div id="panel-repo" class="hidden">
+                        <div class="flex flex-col gap-4">
+                            <label class="text-sm font-medium text-muted-foreground">Git Repository URL</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="repoUrl" placeholder="https://github.com/username/repo.git" 
+                                       class="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-teal-500 font-mono text-zinc-300">
+                                <button onclick="startRepoScan()" class="btn bg-teal-600 hover:bg-teal-700 text-white font-medium px-6 py-2 rounded-md transition-colors">
+                                    <i class="fas fa-search mr-2"></i> Scan Repo
+                                </button>
+                            </div>
+                            <p class="text-xs text-muted">Supports public GitHub, GitLab, and Bitbucket repositories.</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Terminal Results -->
+            <div class="terminal-window shadow-xl">
+                <div class="terminal-header">
+                    <span class="font-bold flex items-center gap-2"><i class="fas fa-terminal"></i> VULNRIX ENGINE OUT</span>
+                    <span id="scanStatus" class="uppercase tracking-wider">IDLE</span>
+                </div>
+                <!-- Log Output -->
+                <div id="terminalOutput" class="terminal-body">
+                    <div class="log-line log-info">> System Init... OK</div>
+                    <div class="log-line log-info">> Ready for analysis.</div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Right Sidebar: Scan History (Unified & Sorted) -->
-        <div class="lg:col-span-1">
-            {% if combined_history %}
-            <div class="card h-fit sticky top-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold flex items-center gap-2">
-                        <i class="fas fa-history text-muted"></i> Scan History
-                    </h3>
+         <!-- Right Sidebar: History -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="card p-0 border border-border bg-card overflow-hidden">
+                <div class="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
+                    <h3 class="font-bold text-sm uppercase tracking-wide text-muted-foreground">Recent Scans</h3>
+                    <button class="text-xs text-teal-500 hover:underline">View All</button>
                 </div>
-                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                <div class="divide-y divide-border/50 max-h-[600px] overflow-y-auto">
                     {% for item in combined_history %}
-                    <div onclick="{% if item.type == 'file' %}loadScanResult({{ item.id }}){% else %}loadProjectResult({{ item.id }}){% endif %}" 
-                         class="group p-3 rounded-lg border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer">
-                        <div class="flex items-start justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <i class="fas {% if item.type == 'file' %}fa-file-code{% else %}fa-folder{% endif %} text-xs text-muted"></i>
-                                <span class="font-medium text-sm truncate max-w-[120px]">{{ item.name }}</span>
+                    <div class="p-3 hover:bg-muted/30 transition-colors cursor-pointer group" onclick="loadHistoryItem({{ item.id }}, '{{ item.type }}')">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <i class="fas {% if item.type == 'file' %}fa-file-code{% else %}fa-project-diagram{% endif %} text-xs text-muted-foreground"></i>
+                                <span class="text-sm font-medium text-foreground truncate">{{ item.name }}</span>
                             </div>
-                            <span class="badge text-[10px] px-1.5 py-0.5 
-                                {% if item.status == 'SAFE' or item.status == 'COMPLETED' %}bg-green-500/10 text-green-500
-                                {% elif item.status == 'VULNERABLE' or item.status == 'ERROR' %}bg-red-500/10 text-red-500
-                                {% else %}bg-yellow-500/10 text-yellow-500{% endif %}">
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {% if item.status == 'SAFE' %}bg-teal-500/10 text-teal-500{% else %}bg-rose-500/10 text-rose-500{% endif %}">
                                 {{ item.status }}
                             </span>
                         </div>
-                        <div class="flex items-center justify-between text-xs text-muted">
-                            <span>{{ item.created_at|date:"M d, H:i" }}</span>
-                            <span>{{ item.detail }}</span>
+                        <div class="flex justify-between items-center text-xs text-zinc-500">
+                             <span>{{ item.created_at|date:"M d, H:i" }}</span>
+                             <span>{{ item.detail }}</span>
                         </div>
                     </div>
+                    {% empty %}
+                    <div class="p-6 text-center text-muted text-sm">No scans yet.</div>
                     {% endfor %}
                 </div>
             </div>
-            {% endif %}
+            
+            <div class="card p-4 border-2 border-dashed border-border bg-transparent text-center">
+                 <p class="text-sm text-muted">Need help? Check the <a href="{% url 'docs' %}" class="text-teal-500 hover:underline">Documentation</a>.</p>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Full Screen Loading Overlay -->
-<div id="loadingOverlay" class="fixed inset-0 bg-background/95 z-[9999] hidden flex-col items-center justify-center p-4">
-    <div class="relative w-28 h-28 mb-6">
-        <!-- Outer spinning ring -->
-        <div class="absolute inset-0 border-t-2 border-r-2 border-primary rounded-full animate-spin"></div>
-        <!-- Inner reverse spinning ring -->
-        <div class="absolute inset-3 border-b-2 border-l-2 border-primary/50 rounded-full animate-spin reverse-spin"></div>
-        <!-- VULNRIX Logo in center -->
-        <div class="absolute inset-0 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 animate-pulse">
-                <path d="M12 2L4 6V11C4 16.55 7.16 21.74 12 23C16.84 21.74 20 16.55 20 11V6L12 2Z" fill="#0a0a0f" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary"/>
-                <path d="M12 7L8 9V12C8 14.5 9.5 16.8 12 17.5C14.5 16.8 16 14.5 16 12V9L12 7Z" fill="currentColor" fill-opacity="0.3" stroke="currentColor" stroke-width="1" class="text-primary"/>
-            </svg>
-        </div>
-    </div>
-    <h2 class="text-xl font-bold mb-2">Running Security Analysis</h2>
-    <p class="text-muted animate-pulse" id="loadingText">Initializing engine...</p>
-</div>
-
 
 {% csrf_token %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-// State
+// --- CONFIG ---
+const term = document.getElementById('terminalOutput');
 let currentMode = 'hybrid';
-let selectedFile = null;
 
-// DOM Elements
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const fileInfo = document.getElementById('fileInfo');
-const loadingOverlay = document.getElementById('loadingOverlay');
-const loadingText = document.getElementById('loadingText');
-const resultsArea = document.getElementById('resultsArea');
-const terminalOutput = document.getElementById('terminalOutput');
-const findingsContainer = document.getElementById('findingsContainer');
-const currentModeDisplay = document.getElementById('currentMode');
+// Tab Logic
+function switchTab(tab) {
+    document.querySelectorAll('[id^="panel-"]').forEach(el => el.classList.add('hidden'));
+    document.getElementById('panel-' + tab).classList.remove('hidden');
+    
+    document.querySelectorAll('[id^="tab-"]').forEach(el => {
+        el.className = "flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors";
+    });
+    const btn = document.getElementById('tab-' + tab);
+    btn.className = "flex-1 py-3 text-sm font-medium border-b-2 border-teal-500 text-teal-500 transition-colors";
+}
 
-// Mode Selection
-window.setMode = function(mode) {
+// Mode Logic
+window.setMode = (mode) => {
     currentMode = mode;
     document.querySelectorAll('[role="group"] button').forEach(btn => {
-        btn.dataset.state = 'inactive';
-        btn.classList.remove('bg-primary', 'text-primary-foreground');
-        btn.classList.add('bg-background');
+        btn.classList.remove('bg-teal-600', 'text-white', 'shadow-sm');
+        btn.classList.add('hover:text-white', 'text-muted-foreground');
     });
-    const activeBtn = document.getElementById('btn-' + mode);
-    activeBtn.dataset.state = 'active';
-    activeBtn.classList.remove('bg-background');
-    activeBtn.classList.add('bg-primary', 'text-primary-foreground');
-    currentModeDisplay.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+    const btn = document.getElementById('btn-' + mode);
+    btn.classList.remove('hover:text-white', 'text-muted-foreground');
+    btn.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+    log(`Switched to ${mode.toUpperCase()} mode.`);
 };
 
-// Utilities
-const formatFileSize = bytes => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+// Logging
+const log = (msg, type='info') => {
+    const el = document.createElement('div');
+    el.className = `log-line log-${type}`;
+    const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+    el.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+    term.appendChild(el);
+    term.scrollTop = term.scrollHeight;
 };
 
-const escapeHtml = text => {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-};
-
-// File Handling
-const selectFile = file => {
-    selectedFile = file;
-    document.getElementById('selectedFileName').textContent = file.name;
-    document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
-    fileInfo.classList.remove('hidden');
-    dropZone.classList.add('hidden');
-};
-
-window.clearFile = () => {
-    selectedFile = null;
-    fileInput.value = '';
-    fileInfo.classList.add('hidden');
-    dropZone.classList.remove('hidden');
-    resultsArea.classList.add('hidden');
-};
-
-dropZone.onclick = () => fileInput.click();
-dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); };
-dropZone.ondragleave = () => { dropZone.classList.remove('border-primary', 'bg-primary/5'); };
-dropZone.ondrop = e => {
+// --- FILE SCAN ---
+const fileInput = document.getElementById('fileInput');
+document.getElementById('dropZone').onclick = () => fileInput.click();
+fileInput.onchange = (e) => { if(e.target.files.length) startFileScan(e.target.files[0]); };
+document.body.ondragover = e => e.preventDefault();
+document.body.ondrop = e => {
     e.preventDefault();
-    dropZone.classList.remove('border-primary', 'bg-primary/5');
-    if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files.length) startFileScan(e.dataTransfer.files[0]);
 };
-fileInput.onchange = e => { if (e.target.files.length) selectFile(e.target.files[0]); };
 
-// Scan Logic
-// Scan Logic
-window.startScan = async () => {
-    if (!selectedFile) return alert('Please select a file');
+async function startFileScan(file) {
+    term.innerHTML = '';
+    document.getElementById('scanStatus').innerText = "SCANNING...";
+    document.getElementById('scanStatus').className = "text-teal-500 animate-pulse uppercase tracking-wider";
+    
+    log(`Initializing File Scan...`, 'info');
+    log(`Target: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+    log(`Mode: ${currentMode.toUpperCase()}`, 'info');
 
-    // File Size Limits
-    const limits = {
-        'fast': 20 * 1024 * 1024,   // 20MB
-        'hybrid': 2 * 1024 * 1024,  // 2MB
-        'deep': 1 * 1024 * 1024     // 1MB
-    };
-    
-    if (selectedFile.size > limits[currentMode]) {
-        return alert(`File too large for ${currentMode.toUpperCase()} mode.\nLimit: ${formatFileSize(limits[currentMode])}.\nYour file: ${formatFileSize(selectedFile.size)}.`);
-    }
-    
-    // UI Prep
-    loadingOverlay.classList.remove('hidden');
-    loadingOverlay.classList.add('flex');
-    loadingText.textContent = `Reading ${selectedFile.name}...`;
-    
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('file', file);
     formData.append('mode', currentMode);
-    
+
     try {
-        loadingText.textContent = `Running ${currentMode} analysis engines...`;
-        
-        const res = await fetch('', {
+        const res = await fetch('', { // POST to current URL
             method: 'POST',
             body: formData,
             headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
         });
-        
-        // Detect session expiry (login redirect)
-        if (res.redirected || res.url.includes('/login') || res.url.includes('/accounts/')) {
-            throw new Error("Session expired. Please refresh the page and log in again.");
-        }
-        
-        // Handle non-JSON responses (like 403 CSRF HTML or 500 Server Error pages)
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            if (res.status === 403) throw new Error("Security Token Invalid (CSRF). Please refresh the page.");
-            if (res.status === 502) throw new Error("Server Timeout. The scan took too long.");
-            if (res.status === 413) throw new Error("File too large.");
-            if (res.status === 200) throw new Error("Session expired. Please refresh and log in again.");
-            throw new Error(`Server returned ${res.status} (Not JSON). Check server logs.`);
-        }
 
-        // Parse JSON safely
-        let data;
-        try {
-            data = await res.json();
-        } catch (parseError) {
-             // If JSON parse fails, read text to see what happened
-             console.error("JSON Parse failed", parseError);
-             const text = await res.text().catch(() => "Unable to read response text");
-             throw new Error(`Server returned invalid JSON (Status ${res.status}). First 100 chars: ${text.substring(0, 100).replace(/</g, '&lt;')}`);
+        if (!res.ok) throw new Error("Server returned " + res.status);
+        
+        const data = await res.json();
+        if(data.error) throw new Error(data.error);
+
+        renderResults(data);
+
+    } catch (e) {
+        log(`CRITICAL ERROR: ${e.message}`, 'error');
+        document.getElementById('scanStatus').innerText = "ERROR";
+        document.getElementById('scanStatus').className = "text-rose-500 uppercase tracking-wider";
+    }
+}
+
+// --- REPO SCAN LOGIC (LIVE TERMINAL) ---
+async function startRepoScan() {
+    const url = document.getElementById('repoUrl').value;
+    if(!url) {
+        log("Error: Please enter a valid Git URL", 'error');
+        return;
+    }
+
+    term.innerHTML = ''; // Clear terminal
+    document.getElementById('scanStatus').innerText = "INITIALIZING...";
+    document.getElementById('scanStatus').className = "text-teal-500 animate-pulse uppercase tracking-wider";
+    
+    // Phase 1: Clone & Index
+    log(`Initializing Repo Scan...`, 'info');
+    log(`Target: ${url}`, 'info');
+    log(`Cloning repository structure...`, 'warn');
+    
+    try {
+        // 1. Create Project & Index Files
+        const initRes = await fetch('{% url "vuln_scan:start_repo_scan" %}', {
+            method: 'POST',
+            body: new URLSearchParams({ 'repo_url': url, 'mode': currentMode }),
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+            }
+        });
+
+        if (!initRes.ok) throw new Error("Server returned " + initRes.status);
+        const initData = await initRes.json();
+        
+        if(initData.error) throw new Error(initData.error);
+        
+        const projectId = initData.project_id;
+        const totalFiles = initData.total_files || 0;
+        
+        log(`Clone Complete. Project ID: ${projectId}`, 'success');
+        log(`Found ${totalFiles} source files to analyze.`, 'info');
+        log(`Starting sequential analysis pipeline...`, 'warn');
+        log('----------------------------------------', 'info');
+
+        // Phase 2: Sequential Scan (The "Matrix" Effect)
+        let issuesCount = 0;
+        
+        // We need to fetch the file list or just poll status. 
+        // For the "Visual" effect, we will poll the status endpoint which should ideally return the next file to scan
+        // But since the current backend might not support "Next File" API perfectly, let's simulate the loop 
+        // by calling the 'scan_next_file' endpoint repeatedly until done.
+        
+        let processed = 0;
+        let isComplete = false;
+        
+        document.getElementById('scanStatus').innerText = "SCANNING...";
+        
+        while(!isComplete && processed < totalFiles) {
+            // Request next file scan
+            // FIX: Use correct URL prefix 'dashboard' instead of 'vuln'
+            const scanRes = await fetch(`/dashboard/project/${projectId}/scan-file/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+            });
+            
+            if(!scanRes.ok) {
+                log(`[DEBUG] API Error: ${scanRes.status} ${scanRes.statusText}`, 'error');
+                break;
+            }
+            const scanData = await scanRes.json();
+            
+            // DEBUG: See why it's completing early
+            if(scanData.status === 'COMPLETED' || scanData.status === 'COMPLETE') {
+                log(`[DEBUG] Received COMPLETE signal. Pending: ${scanData.pending_count || '?'}`, 'warn');
+                isComplete = true;
+                break;
+            }
+            
+            if(scanData.filename) {
+                processed++;
+                const fname = scanData.filename;
+                const findings = scanData.findings || [];
+                issuesCount += findings.length;
+                
+                // Log the file action
+                log(`[${processed}/${totalFiles}] Analyzing ${fname}...`, 'info');
+                
+                // Log specific findings if any
+                if(findings.length > 0) {
+                     findings.forEach(issue => {
+                         const color = issue.severity === 'high' ? 'error' : (issue.severity === 'medium' ? 'warn' : 'info');
+                         log(`  > [${issue.type}] ${issue.description || 'Issue detected'}`, color);
+                     });
+                }
+                
+                // Slight delay for visual effect if it's too fast
+                // await new Promise(r => setTimeout(r, 100));
+            }
         }
         
-        if (!res.ok) {
-            throw new Error(data.error || "Unknown error occurred");
-        }
+        // Phase 3: Completion
+        log('----------------------------------------', 'info');
+        log(`Repository Analysis Complete.`, 'success');
+        log(`Total Files Scanned: ${processed}`, 'info');
+        log(`Total Issues Found: ${issuesCount}`, issuesCount > 0 ? 'warn' : 'success');
         
-        loadingText.textContent = 'Generating report...';
-        setTimeout(() => {
-            loadingOverlay.classList.add('hidden');
-            loadingOverlay.classList.remove('flex');
-            renderResults(data, selectedFile.name);
-            // Update last scan time
-            const now = new Date();
-            document.getElementById('lastScan').textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        }, 500);
+        document.getElementById('scanStatus').innerText = "DONE";
+        document.getElementById('scanStatus').className = "text-teal-500 uppercase tracking-wider";
+        
+        // Update Stats UI
+        document.getElementById('statIssues').innerText = issuesCount;
         
     } catch (e) {
-        loadingOverlay.classList.add('hidden');
-        loadingOverlay.classList.remove('flex');
-        alert('Scan Error: ' + e.message);
-        console.error("Scan Error Detail:", e);
+        log(`CRITICAL ERROR: ${e.message}`, 'error');
+         document.getElementById('scanStatus').innerText = "ERROR";
+        document.getElementById('scanStatus').className = "text-rose-500 uppercase tracking-wider";
     }
-};
+}
 
-// Rendering
-function renderResults(data, filename) {
-    resultsArea.classList.remove('hidden');
+// --- RENDER LOGIC ---
+function renderResults(data) {
+    log('Analysis Phase Complete.', 'success');
+    document.getElementById('scanStatus').innerText = data.status || "COMPLETE";
+    document.getElementById('scanStatus').className = data.status === 'SAFE' ? "text-teal-500 uppercase tracking-wider" : "text-rose-500 uppercase tracking-wider";
     
-    // Update Stats
-    const totalFindings = (data.findings ? data.findings.length : 0) + (data.semantic_hints ? data.semantic_hints.length : 0);
-    document.getElementById('issuesCount').textContent = totalFindings;
-
-    // Terminal Output
-    const statusColor = data.status === 'SAFE' ? 'text-green-400' : 'text-red-400';
-    let logs = `
-        <div class="flex gap-2"><span class="text-blue-500">➜</span> <span>TARGET: ${escapeHtml(filename)}</span></div>
-        <div class="flex gap-2"><span class="text-blue-500">➜</span> <span>MODE: ${currentMode.toUpperCase()}</span></div>
-        <div class="flex gap-2"><span class="text-blue-500">➜</span> <span class="${statusColor}">STATUS: ${data.status || 'COMPLETE'}</span></div>
-    `;
+    // Stats Update
+    document.getElementById('statIssues').innerText = data.findings ? data.findings.length : 0;
     
-    if(data.risk_score) logs += `<div class="flex gap-2"><span class="text-blue-500">➜</span> <span>RISK_SCORE: ${data.risk_score}</span></div>`;
-    
-    if (data.virustotal && data.virustotal.source === 'virustotal_api') {
-        const vt = data.virustotal;
-        const vtColor = vt.malicious > 0 ? 'text-red-400' : 'text-green-400';
-        logs += `<div class="flex gap-2"><span class="text-blue-500">➜</span> <span class="${vtColor}">VIRUSTOTAL: ${vt.malicious}/${vt.total_engines} engines detected malware</span></div>`;
-    }
-
-    if (data.error) logs += `<div class="flex gap-2"><span class="text-red-500">✖</span> <span class="text-red-400">ERROR: ${escapeHtml(data.error)}</span></div>`;
-
-    terminalOutput.innerHTML = logs;
-
-    // Findings Cards
-    let html = '';
-    
-    // 1. VirusTotal Card
-    if (data.virustotal && data.virustotal.source === 'virustotal_api') {
-        const vt = data.virustotal;
-        const isMalicious = vt.malicious > 0;
-        
-        html += `
-        <div class="card p-0 overflow-hidden border-${isMalicious ? 'destructive' : 'success'}/50">
-            <div class="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
-                <h3 class="font-semibold flex items-center gap-2">
-                    <i class="fas fa-shield-virus ${isMalicious ? 'text-destructive' : 'text-success'}"></i> VirusTotal Analysis
-                </h3>
-                <span class="badge ${isMalicious ? 'badge--destructive' : 'badge--outline'}">
-                    ${vt.malicious}/${vt.total_engines} Detections
-                </span>
-            </div>
-            <div class="p-4">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="text-sm font-mono bg-muted p-2 rounded flex-1 truncate">
-                        SHA256: ${vt.file_hash || 'N/A'}
-                    </div>
-                </div>
-                ${vt.permalink ? `<a href="${vt.permalink}" target="_blank" class="text-sm text-primary hover:underline"><i class="fas fa-external-link-alt mr-1"></i> View Full Report</a>` : ''}
-        </div>`;
-    }
-
-    // 2. AI Malicious Code Detection Card
-    if (data.ai_malicious_risk) {
-        const ai = data.ai_malicious_risk;
-        const riskColors = {
-            'CRITICAL': 'text-red-500 bg-red-500/10 border-red-500',
-            'HIGH': 'text-orange-500 bg-orange-500/10 border-orange-500',
-            'MEDIUM': 'text-yellow-500 bg-yellow-500/10 border-yellow-500',
-            'LOW': 'text-blue-500 bg-blue-500/10 border-blue-500',
-            'SAFE': 'text-green-500 bg-green-500/10 border-green-500'
-        };
-        const riskClass = riskColors[ai.risk_level] || riskColors['MEDIUM'];
-        const isRisky = ai.risk_level !== 'SAFE';
-        
-        html += `
-        <div class="card p-0 overflow-hidden border-${isRisky ? 'destructive' : 'success'}/50 mt-4">
-            <details class="group">
-                <summary class="p-4 border-b border-border bg-muted/30 flex justify-between items-center cursor-pointer list-none hover:bg-muted/50 transition-colors">
-                    <h3 class="font-semibold flex items-center gap-2">
-                        <i class="fas fa-robot ${isRisky ? 'text-destructive' : 'text-success'}"></i> 
-                        AI-Generated Malicious Code Risk
-                        <i class="fas fa-chevron-down text-xs text-muted group-open:rotate-180 transition-transform"></i>
-                    </h3>
-                    <div class="flex items-center gap-2">
-                        <span class="badge ${riskClass}">${ai.risk_level}</span>
-                        <span class="text-sm text-muted">Score: ${ai.risk_score}/100</span>
-                    </div>
-                </summary>
-                <div class="p-4">
-                    <!-- Flags -->
-                    ${ai.flags && ai.flags.length > 0 ? `
-                    <div class="mb-4">
-                        <h4 class="text-sm font-semibold text-muted mb-2">Detection Flags</h4>
-                        <div class="flex flex-wrap gap-2">
-                            ${ai.flags.map(flag => `<span class="badge bg-destructive/10 text-destructive text-xs">${escapeHtml(flag)}</span>`).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    <!-- Summary -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                        <div class="bg-muted/50 rounded-lg p-3 text-center">
-                            <div class="text-2xl font-bold ${ai.summary && ai.summary.ai_style ? 'text-yellow-500' : 'text-muted'}">${ai.summary && ai.summary.ai_style ? '⚠' : '✓'}</div>
-                            <div class="text-xs text-muted">AI Style</div>
-                        </div>
-                        <div class="bg-muted/50 rounded-lg p-3 text-center">
-                            <div class="text-2xl font-bold ${ai.summary && ai.summary.malicious_templates ? 'text-red-500' : 'text-muted'}">${ai.summary && ai.summary.malicious_templates ? '⚠' : '✓'}</div>
-                            <div class="text-xs text-muted">Malicious Template</div>
-                        </div>
-                        <div class="bg-muted/50 rounded-lg p-3 text-center">
-                            <div class="text-2xl font-bold ${ai.summary && ai.summary.obfuscation ? 'text-orange-500' : 'text-muted'}">${ai.summary && ai.summary.obfuscation ? '⚠' : '✓'}</div>
-                            <div class="text-xs text-muted">Obfuscation</div>
-                        </div>
-                        <div class="bg-muted/50 rounded-lg p-3 text-center">
-                            <div class="text-2xl font-bold ${ai.summary && ai.summary.hallucinations ? 'text-purple-500' : 'text-muted'}">${ai.summary && ai.summary.hallucinations ? '⚠' : '✓'}</div>
-                            <div class="text-xs text-muted">Hallucinations</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Detailed Findings -->
-                    ${ai.total_findings > 0 ? `
-                    <details class="mt-4">
-                        <summary class="text-sm font-semibold text-muted cursor-pointer hover:text-foreground">
-                            View ${ai.total_findings} Finding(s) <i class="fas fa-chevron-right text-xs"></i>
-                        </summary>
-                        <div class="mt-3 space-y-2 max-h-64 overflow-y-auto">
-                            ${(ai.findings || []).slice(0, 15).map(f => {
-                                const sevColor = f.severity === 'high' ? 'border-l-red-500 bg-red-500/5' : 
-                                               (f.severity === 'medium' ? 'border-l-yellow-500 bg-yellow-500/5' : 'border-l-blue-500 bg-blue-500/5');
-                                return `
-                                <div class="border-l-2 ${sevColor} p-2 rounded-r text-sm">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-medium">${escapeHtml(f.type || 'Detection')}</span>
-                                        ${f.line ? `<span class="text-xs text-muted">Line ${f.line}</span>` : ''}
-                                    </div>
-                                    ${f.evidence ? `<code class="text-xs text-muted block mt-1 truncate">${escapeHtml(String(f.evidence).substring(0, 80))}...</code>` : ''}
-                                </div>`;
-                            }).join('')}
-                        </div>
-                    </details>
-                    ` : '<p class="text-sm text-muted text-center py-4">No AI-generated malicious patterns detected.</p>'}
-                </div>
-            </details>
-        </div>`;
-    }
-
-    // 2. Code Findings
-    const allFindings = [...(data.findings || []), ...(data.semantic_hints || [])];
-    
-    if (allFindings.length > 0) {
-        html += `<h3 class="text-lg font-semibold mt-8 mb-4">Detailed Findings</h3><div class="grid gap-4">`;
-        
-        allFindings.forEach(f => {
-            const severity = (f.severity || 'medium').toLowerCase();
-            const severityColors = {
-                high: 'border-l-4 border-l-red-500',
-                medium: 'border-l-4 border-l-yellow-500',
-                low: 'border-l-4 border-l-blue-500'
-            };
-            const borderClass = severityColors[severity] || severityColors.medium;
+    // Print Findings
+    log('----------------------------------------', 'info');
+    if (data.findings && data.findings.length > 0) {
+        data.findings.forEach(f => {
+            const isSnyk = f.source === 'snyk';
+            const prefix = isSnyk ? '[SNYK]' : '';
+            const type = isSnyk ? 'snyk' : (f.severity === 'high' ? 'error' : 'warn');
             
-            html += `
-            <div class="card p-0 ${borderClass}">
-                <div class="p-4">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h4 class="font-semibold text-foreground">${escapeHtml(f.type || 'Security Issue')}</h4>
-                            <span class="text-xs text-muted font-mono">${escapeHtml(f.cwe || '')}</span>
-                        </div>
-                        <span class="badge uppercase text-xs ${severity === 'high' ? 'bg-red-500/10 text-red-500' : (severity === 'medium' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-blue-500/10 text-blue-500')}">
-                            ${escapeHtml(severity)}
-                        </span>
-                    </div>
-                    
-                    ${f.location && f.location.line ? `<div class="text-sm text-muted mb-2"><i class="fas fa-map-marker-alt mr-1"></i> Line ${f.location.line}</div>` : ''}
-                    
-                    ${f.location && f.location.code ? `<div class="bg-muted/50 p-3 rounded-md font-mono text-xs overflow-x-auto my-3 border border-border">${escapeHtml(f.location.code)}</div>` : ''}
-                    
-                    <p class="text-sm text-muted-foreground mb-3">${escapeHtml(f.reason || '')}</p>
-                    
-                    ${f.recommendation ? `
-                    <div class="bg-primary/5 p-3 rounded text-sm text-primary-foreground/80 flex gap-2">
-                        <i class="fas fa-lightbulb mt-0.5 text-primary"></i>
-                        <span>${escapeHtml(f.recommendation)}</span>
-                    </div>` : ''}
-                </div>
-            </div>`;
+            log(`${prefix} [${f.severity.toUpperCase()}] ${f.type}: ${f.description || f.reason}`, type);
+            if(f.location) {
+                log(`   @ ${f.location.file || 'line'}:${f.location.line}`, 'info');
+            }
         });
-        html += '</div>';
-    } else if (data.status === 'SAFE') {
-        html += `
-        <div class="text-center p-12 card border-dashed">
-            <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-check text-2xl text-green-500"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-green-500 mb-2">No Vulnerabilities Found</h3>
-            <p class="text-muted">Your code passed all checks.</p>
-        </div>`;
+    } else {
+        log('No vulnerabilities detected. Clean execution.', 'success');
     }
-
-    findingsContainer.innerHTML = html;
-    resultsArea.scrollIntoView({ behavior: 'smooth' });
-}
-
-// Load scan result from history
-function loadScanResult(scanId) {
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
-    fetch(`/dashboard/history/${scanId}/`, {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success && data.result) {
-            renderResults(data.result, data.filename || 'Historical Scan');
-        } else {
-            Toast.error('Could not load scan result');
-        }
-    })
-    .catch(err => {
-        console.error('Load scan error:', err);
-        Toast.error('Failed to load scan');
-    });
+    // VirusTotal
+    if(data.virustotal) {
+        log(`VirusTotal: ${data.virustotal.malicious} malicious flags`, data.virustotal.malicious > 0 ? 'error' : 'success');
+    }
 }
 
-// Auto-Load (Last Scan)
-{% if last_scan and last_result %}
-document.addEventListener('DOMContentLoaded', () => {
-    const lastResult = {{ last_result|safe }};
-    if (lastResult && Object.keys(lastResult).length > 0) {
-        renderResults(lastResult, '{{ last_scan.filename|escapejs }}');
-    }
-});
-{% endif %}
+function loadHistoryItem(id, type) {
+    log(`Loading history items is not fully implemented in this quick view. Please scan a file.`, 'warn');
+}
 </script>
-    
-    <!-- Tab Switcher (Injecting before Main Scanner) -->
-    <script>
-        // Inject Tabs
-        const header = document.querySelector('.container .flex.flex-col');
-        const mainScanner = document.querySelector('.lg\\:col-span-2 > div:first-child'); 
-        if(mainScanner) mainScanner.id = 'view-single';
-        
-        // Add tab buttons to header if not present
-        if (!document.getElementById('scan-tabs')) {
-            const tabsHtml = `
-            <div id="scan-tabs" class="flex gap-4 mb-4 border-b border-border/50 pb-1">
-                <button onclick="switchView('single')" id="tab-single" class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary transition-colors">
-                    <i class="fas fa-file-code mr-2"></i> Single File
-                </button>
-                <button onclick="switchView('repo')" id="tab-repo" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors">
-                    <i class="fab fa-github mr-2"></i> Repo / Zip
-                </button>
-            </div>`;
-            const container = document.querySelector('.lg\\:col-span-2');
-            if(container) container.insertAdjacentHTML('afterbegin', tabsHtml);
-        }
-        
-        function switchView(mode) {
-            document.getElementById('view-single').classList.toggle('hidden', mode !== 'single');
-            document.getElementById('view-repo').classList.toggle('hidden', mode !== 'repo');
-            
-            document.getElementById('tab-single').className = mode === 'single' ? 'px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary transition-colors' : 'px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors';
-            document.getElementById('tab-repo').className = mode === 'repo' ? 'px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary transition-colors' : 'px-4 py-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors';
-        }
-    </script>
-
-    <!-- Project Analysis Modal -->
-    <div id="projectModal" class="fixed inset-0 bg-black/80 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="card w-full max-w-3xl p-6 relative animate-in zoom-in-95 duration-200 border border-white/10 bg-[#050b14]">
-            <button onclick="document.getElementById('projectModal').classList.add('hidden')" class="absolute top-4 right-4 text-muted-foreground hover:text-white">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <div class="mb-6">
-                <h3 class="text-xl font-bold flex items-center gap-2 text-foreground">
-                    <i class="fas fa-project-diagram text-primary"></i> Project Analysis
-                </h3>
-                <div id="projectModalName" class="text-sm text-muted-foreground font-mono mt-1"></div>
-            </div>
-    
-            <div class="grid grid-cols-4 gap-4 mb-6">
-                <div class="p-3 rounded bg-white/5 border border-white/10 col-span-1">
-                    <div class="text-xs text-muted-foreground">Risk Score</div>
-                    <div id="projectModalScore" class="text-2xl font-bold text-primary">0</div>
-                </div>
-                <div class="p-3 rounded bg-white/5 border border-white/10 col-span-1">
-                    <div class="text-xs text-muted-foreground">Files</div>
-                    <div id="projectModalFiles" class="text-2xl font-bold text-foreground">0</div>
-                </div>
-                <div class="p-3 rounded bg-white/5 border border-white/10 col-span-2">
-                    <div class="text-xs text-muted-foreground">Status</div>
-                    <div id="projectModalStatus" class="text-xl font-bold text-foreground">UNK</div>
-                </div>
-            </div>
-    
-            <h4 class="font-semibold text-sm mb-2 text-muted-foreground">Vulnerabilities Found:</h4>
-            <div class="border border-white/10 rounded-md overflow-hidden bg-black/20 max-h-[300px] overflow-y-auto mb-6 custom-scrollbar">
-                 <table class="w-full text-left text-sm">
-                    <thead class="bg-white/5 text-muted-foreground font-mono text-xs sticky top-0 backdrop-blur-md">
-                        <tr>
-                            <th class="p-2">File</th>
-                            <th class="p-2">Severity</th>
-                            <th class="p-2 text-right">Risk</th>
-                        </tr>
-                    </thead>
-                    <tbody id="projectModalTableBody" class="divide-y divide-white/10">
-                        <!-- JS Injected -->
-                    </tbody>
-                 </table>
-            </div>
-    
-            <!-- Detailed Findings Container (shown when clicking a file) -->
-            <div id="projectFindingsContainer" class="hidden space-y-4 mb-6 max-h-[400px] overflow-y-auto custom-scrollbar">
-                <!-- Detailed findings cards injected here by JS -->
-            </div>
-
-            <div class="flex justify-end gap-2">
-                 <button onclick="window.location.reload()" class="btn btn--primary">Done & Refresh</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ORCHESTRATION LOGIC (Restored & Fixed) -->
-    <script>
-    const scanLogs = document.getElementById('scanLogs');
-    const projectProgress = document.getElementById('projectProgress');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    
-    function addLog(msg, type='info') {
-        const div = document.createElement('div');
-        div.className = `mb-1 ${type === 'error' ? 'text-red-400' : (type === 'success' ? 'text-green-400' : 'text-muted')}`;
-        div.innerHTML = `<span class="opacity-50">${new Date().toLocaleTimeString()}</span> ${msg}`;
-        scanLogs.appendChild(div);
-        scanLogs.scrollTop = scanLogs.scrollHeight;
-    }
-
-    // *** CRITICAL: Defined BEFORE usages ***
-    let currentProjectId = null;
-    let currentProjectData = null;
-    
-    const onProjectScanComplete = (projectId) => {
-        projectProgress.classList.add('hidden');
-        addLog(`Analysis Completed for Project #${projectId}`, 'success');
-        
-        // Fetch Status
-        fetch(`/dashboard/project/${projectId}/status/`)
-            .then(res => res.json())
-            .then(data => {
-                currentProjectId = projectId;
-                currentProjectData = data;
-                
-                // Show inline results area
-                const resultsArea = document.getElementById('repoResultsArea');
-                resultsArea.classList.remove('hidden');
-                
-                // Populate summary stats
-                document.getElementById('repoResultName').textContent = data.repo_url || data.project_name || `Project #${projectId}`;
-                document.getElementById('repoResultFiles').textContent = data.total || 0;
-                
-                // Score Normalization
-                const nScore = data.normalized_score !== undefined ? data.normalized_score : 0;
-                const grade = data.grade || 'C';
-                const scoreEl = document.getElementById('repoResultScore');
-                scoreEl.innerHTML = `<span class="text-3xl mr-2">${grade}</span><span class="text-sm opacity-60">(${nScore}%)</span>`;
-                scoreEl.className = grade === 'A' ? 'text-green-500 font-bold' : (grade === 'F' ? 'text-red-500 font-bold' : 'text-yellow-500 font-bold');
-                
-                const statusEl = document.getElementById('repoResultStatus');
-                statusEl.textContent = data.status || 'UNKNOWN';
-                statusEl.className = data.status === 'COMPLETED' ? 'text-xl font-bold text-green-500' : 'text-xl font-bold text-yellow-500';
-                
-                // Populate file list
-                const filesList = document.getElementById('repoFilesList');
-                filesList.innerHTML = '';
-                
-                if(data.findings && data.findings.length > 0) {
-                    data.findings.forEach(f => {
-                        const div = document.createElement('div');
-                        div.className = 'flex items-center justify-between p-3 hover:bg-muted/30 cursor-pointer transition-colors';
-                        const sev = (f.severity || 'SAFE').toUpperCase();
-                        // Inline style for guaranteed color
-                        const sevColor = sev === 'HIGH' || sev === 'CRITICAL' ? '#ef4444' : (sev === 'MEDIUM' ? '#eab308' : '#22c55e');
-                        const sevWeight = sev === 'HIGH' || sev === 'CRITICAL' ? 'bold' : 'normal';
-                        div.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <i class="fas fa-file-code text-muted text-xs"></i>
-                                <span class="font-mono text-sm truncate max-w-[200px]" title="${f.filename}">${f.filename}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-medium" style="color: ${sevColor}; font-weight: ${sevWeight};">${f.severity}</span>
-                                <span class="text-xs text-muted">${f.risk_score}</span>
-                                <i class="fas fa-chevron-right text-xs text-muted"></i>
-                            </div>
-                        `;
-                        div.onclick = () => showInlineFileDetails(projectId, f.file_id, f.filename);
-                        filesList.appendChild(div);
-                    });
-                } else {
-                    filesList.innerHTML = '<div class="p-4 text-center text-muted">No files scanned or all files are safe.</div>';
-                }
-            });
-    };
-    
-    function showFileDetails(projectId, fileId, filename) {
-        fetch(`/vuln/project/${projectId}/file/${fileId}/`)
-            .then(res => res.json())
-            .then(data => {
-                // Hide file list, show detailed findings
-                document.querySelector('#projectModal h4').textContent = `Vulnerabilities in: ${filename}`;
-                const container = document.getElementById('projectFindingsContainer');
-                container.innerHTML = '';
-                
-                if(data.findings && data.findings.length > 0) {
-                    data.findings.forEach(finding => {
-                        const card = document.createElement('div');
-                        const sev = (finding.severity || 'info').toLowerCase();
-                        card.className = 'card p-4 border-l-4 mb-3 ' + 
-                            (sev === 'critical' || sev === 'high' ? 'border-red-500' : 
-                             sev === 'medium' ? 'border-yellow-500' : 'border-blue-500');
-                        
-                        // Get line and code from location object
-                        const line = finding.location?.line || finding.line;
-                        const code = finding.location?.code || finding.code || '';
-                        
-                        card.innerHTML = `
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-mono px-2 py-1 rounded ${
-                                        sev === 'critical' || sev === 'high' ? 'bg-red-500/20 text-red-400' :
-                                        sev === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        'bg-blue-500/20 text-blue-400'
-                                    }">${finding.severity || 'INFO'}</span>
-                                    <span class="text-xs font-medium text-foreground">${finding.type || ''}</span>
-                                </div>
-                                ${line ? `<span class="text-xs text-muted">Line ${line}</span>` : ''}
-                            </div>
-                            <p class="text-sm text-foreground mb-2">${finding.reason || finding.description || finding.message || 'Security issue detected'}</p>
-                            ${finding.cwe ? `<p class="text-xs text-muted mb-2"><i class="fas fa-link mr-1"></i>${finding.cwe}</p>` : ''}
-                            ${code ? `<pre class="text-xs bg-black/30 p-2 rounded overflow-x-auto mb-2"><code>${code}</code></pre>` : ''}
-                            ${finding.recommendation ? `<p class="text-xs text-green-400"><i class="fas fa-lightbulb mr-1"></i>${finding.recommendation}</p>` : ''}
-                        `;
-                        container.appendChild(card);
-                    });
-                } else {
-                    container.innerHTML = '<p class="text-muted text-center">No detailed findings available.</p>';
-                }
-                
-                // Show back button
-                document.getElementById('projectModalTableBody').parentElement.parentElement.classList.add('hidden');
-                container.classList.remove('hidden');
-                document.querySelector('#projectModal .btn--primary').textContent = 'Back to Files';
-                document.querySelector('#projectModal .btn--primary').onclick = () => {
-                    document.getElementById('projectModalTableBody').parentElement.parentElement.classList.remove('hidden');
-                    container.classList.add('hidden');
-                    document.querySelector('#projectModal h4').textContent = 'Vulnerabilities Found:';
-                    document.querySelector('#projectModal .btn--primary').textContent = 'Done & Refresh';
-                    document.querySelector('#projectModal .btn--primary').onclick = () => window.location.reload();
-                };
-            });
-    }
-
-    const orchestrateProjectScan = async (projectId, totalFiles) => {
-        projectProgress.classList.remove('hidden');
-        scanLogs.innerHTML = '';
-        let processed = 0;
-        
-        addLog(`Starting scan logic for Project #${projectId}...`, 'info');
-        
-        const loop = async () => {
-            try {
-                const res = await fetch(`/dashboard/project/${projectId}/scan-file/`, {
-                    method: 'POST',
-                    headers: {'X-CSRFToken': '{{ csrf_token }}'}
-                });
-                if(!res.ok) throw new Error("Network Error");
-                const data = await res.json();
-                
-                if(data.status === 'COMPLETED') {
-                     progressBar.style.width = '100%';
-                     progressText.textContent = 'Completed';
-                     onProjectScanComplete(projectId);
-                     return;
-                }
-                
-                if(data.status === 'PROCESSED') {
-                    processed++;
-                    const pct = Math.round((processed/totalFiles)*100);
-                    progressBar.style.width = `${pct}%`;
-                    progressText.textContent = `${processed}/${totalFiles}`;
-                    addLog(`[${data.severity}] ${data.filename}`, 'info');
-                    loop(); // Recursive next
-                    return;
-                }
-                
-                if(data.status === 'WAITING' || data.status === 'ERROR') {
-                    if(data.status ==='ERROR') addLog(`Error: ${data.filename}`, 'error');
-                    setTimeout(loop, 1000);
-                    return;
-                }
-                
-            } catch(e) {
-                addLog(`Retry: ${e.message}`, 'error');
-                setTimeout(loop, 2000);
-            }
-        };
-        loop();
-    };
-
-    window.startRepoScan = async () => {
-        const url = document.getElementById('repoUrl').value;
-        if(!url) return alert("Enter URL");
-        
-        try {
-            const formData = new FormData();
-            formData.append('repo_url', url);
-            
-            addLog("Fetching repository...", "info");
-            projectProgress.classList.remove('hidden');
-            
-            const res = await fetch('/dashboard/scan/repo/', {
-                method: 'POST',
-                body: formData,
-                headers: {'X-CSRFToken': '{{ csrf_token }}'}
-            });
-            
-            // Parse JSON safely
-            let data;
-            try {
-                data = await res.json();
-            } catch (parseError) {
-                 console.error("Repo Scan JSON Parse failed", parseError);
-                 const text = await res.text().catch(() => "Unable to read response text");
-                 throw new Error(`Server returned invalid JSON (Status ${res.status}). First 100 chars: ${text.substring(0, 100).replace(/</g, '&lt;')}`);
-            }
-            
-            if(!res.ok) throw new Error(data.error);
-            
-            // Show warning if limit was exceeded
-            if(data.limit_exceeded) {
-                addLog(`⚠️ Repo has more than ${data.max_files} files. Only first ${data.max_files} will be scanned.`, 'error');
-            }
-            
-            orchestrateProjectScan(data.project_id, data.total_files);
-            
-        } catch(e) {
-            alert("Scan Failed: " + e.message);
-            projectProgress.classList.add('hidden');
-        }
-    };
-    
-    // Load project result from history
-    window.loadProjectResult = function(projectId) {
-        // Switch to repo tab first
-        if(typeof switchView === 'function') switchView('repo');
-        onProjectScanComplete(projectId);
-    };
-    
-    // Show inline file details
-    function showInlineFileDetails(projectId, fileId, filename) {
-        fetch(`/dashboard/project/${projectId}/file/${fileId}/`)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('repoFileDetailName').textContent = filename;
-                const container = document.getElementById('repoFileDetailFindings');
-                container.innerHTML = '';
-                
-                if(data.findings && data.findings.length > 0) {
-                    data.findings.forEach(finding => {
-                        const card = document.createElement('div');
-                        const sev = (finding.severity || 'info').toLowerCase();
-                        card.className = 'p-4 bg-muted/20 rounded-lg border-l-4 ' + 
-                            (sev === 'critical' || sev === 'high' ? 'border-red-500' : 
-                             sev === 'medium' ? 'border-yellow-500' : 'border-blue-500');
-                        
-                        const line = finding.location?.line || finding.line;
-                        const code = finding.location?.code || finding.code || '';
-                        
-                        card.innerHTML = `
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-mono px-2 py-1 rounded ${
-                                        sev === 'critical' || sev === 'high' ? 'bg-red-500/20 text-red-400' :
-                                        sev === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        'bg-blue-500/20 text-blue-400'
-                                    }">${finding.severity || 'INFO'}</span>
-                                    <span class="text-xs font-medium text-foreground">${finding.type || ''}</span>
-                                </div>
-                                ${line ? `<span class="text-xs text-muted">Line ${line}</span>` : ''}
-                            </div>
-                            <p class="text-sm text-foreground mb-2">${finding.reason || finding.description || 'Security issue detected'}</p>
-                            ${finding.cwe ? `<p class="text-xs text-muted mb-2"><i class="fas fa-link mr-1"></i>${finding.cwe}</p>` : ''}
-                            ${code ? `<pre class="text-xs bg-black/30 p-2 rounded overflow-x-auto mb-2 font-mono"><code>${code}</code></pre>` : ''}
-                            ${finding.recommendation ? `<p class="text-xs text-green-400"><i class="fas fa-lightbulb mr-1"></i>${finding.recommendation}</p>` : ''}
-                        `;
-                        container.appendChild(card);
-                    });
-                } else {
-                    container.innerHTML = '<p class="text-muted text-center p-4">No detailed findings available for this file.</p>';
-                }
-                
-                // Show detail view, hide file list
-                document.getElementById('repoFileDetailView').classList.remove('hidden');
-            });
-    }
-    
-    // Hide file detail view
-    window.hideRepoFileDetail = function() {
-        document.getElementById('repoFileDetailView').classList.add('hidden');
-    };
-    
-    // Toggle repo details view
-    window.toggleRepoDetails = function() {
-        // This could expand/collapse the file list or show more info
-        // For now it scrolls to show all files
-        document.getElementById('repoFilesList').scrollIntoView({ behavior: 'smooth' });
-    };
-    </script>
 {% endblock %}

@@ -94,6 +94,23 @@ class ScanProject(models.Model):
     def __str__(self):
         return f"Project {self.name} ({self.status})"
 
+    def get_findings(self) -> list:
+        """Aggregate findings from all file results."""
+        all_findings = []
+        for f in self.file_results.all():
+            all_findings.extend(f.get_findings())
+        return all_findings
+    
+    def get_full_result(self) -> dict:
+        """Return summary result."""
+        return {
+            'risk_score': self.risk_score,
+            'total_files': self.total_files,
+            'processed_files': self.processed_files,
+            'status': self.status,
+            'findings_count': sum(len(f.get_findings()) for f in self.file_results.all())
+        }
+
 
 class ScanFileResult(models.Model):
     """
