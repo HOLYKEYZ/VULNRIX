@@ -668,7 +668,11 @@ def scan_next_file(request, project_id):
         pipeline = get_pipeline()
         dispatcher = LLMDispatcher(pipeline)
         
-        result = dispatcher.scan_file(str(abs_path), mode="fast") # Use fast for repo scans
+        # Determine Mode (Default to hybrid if not specified, but respect user choice)
+        scan_mode = request.POST.get('mode', 'hybrid') 
+        # Note: Frontend must pass this in the loop
+        
+        result = dispatcher.scan_file(str(abs_path), mode=scan_mode)
         
         # Update Result
         next_file.status = 'COMPLETED' if result.get('status') != 'ERROR' else 'ERROR'

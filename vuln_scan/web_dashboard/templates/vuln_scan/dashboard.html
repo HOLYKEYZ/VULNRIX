@@ -393,9 +393,14 @@ async function startRepoScan() {
         while(!isComplete && processed < totalFiles) {
             // Request next file scan
             // FIX: Use correct URL prefix 'dashboard' instead of 'vuln'
+            // FIX: Pass currentMode to enable AI scanning
             const scanRes = await fetch(`/dashboard/project/${projectId}/scan-file/`, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+                body: new URLSearchParams({ 'mode': currentMode }), // Pass mode here
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
+                }
             });
             
             if(!scanRes.ok) {
@@ -470,12 +475,24 @@ function addFindingRow(issue, filename) {
     if (issue.location && issue.location.line) lineNum = issue.location.line;
     if (issue.line) lineNum = issue.line; // Fallback
     
+    // Remediation / Fix
+    let fixHtml = '';
+    if (issue.recommendation) {
+        fixHtml = `<div class="mt-2 pt-2 border-t border-zinc-700">
+            <span class="text-teal-500 font-bold text-xs uppercase">Recommendation:</span>
+            <div class="text-zinc-400 text-xs mt-1 darkable-code">${issue.recommendation}</div>
+        </div>`;
+    }
+
     tr.innerHTML = `
-        <td class="p-3 ${sevColor} font-bold">${issue.severity.toUpperCase()}</td>
-        <td class="p-3 text-gray-300">${issue.type}</td>
-        <td class="p-3 text-gray-400 text-xs font-mono">${filename || '-'}</td>
-        <td class="p-3 text-teal-500 font-mono text-xs">${lineNum}</td>
-        <td class="p-3 text-gray-300 whitespace-pre-wrap">${issue.description || issue.reason}</td>
+        <td class="p-3 ${sevColor} font-bold align-top">${issue.severity.toUpperCase()}</td>
+        <td class="p-3 text-gray-300 align-top">${issue.type}</td>
+        <td class="p-3 text-gray-400 text-xs font-mono align-top">${filename || '-'}</td>
+        <td class="p-3 text-teal-500 font-mono text-xs align-top">${lineNum}</td>
+        <td class="p-3 text-gray-300 whitespace-pre-wrap align-top">
+            ${issue.description || issue.reason}
+            ${fixHtml}
+        </td>
     `;
     tbody.appendChild(tr);
 }
