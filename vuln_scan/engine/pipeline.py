@@ -82,29 +82,31 @@ class SecurityPipeline:
                 self.logger.error(f"File read error: {e}")
                 return {"status": "ERROR", "error": f"File read error: {str(e)}"}
 
-            # Truncate code early for memory safety (max 10KB for all operations)
-            max_code = 10000
-            original_len = len(code)
-            if len(code) > max_code:
-                code = code[:max_code]
-                self.logger.info(f"Truncated code from {original_len} to {max_code} bytes")
-
-            # 1. Keyword Filtering (Fast, no memory impact)
+            # Truncate code early only for LLM/Logging safety, but keep full code for analysis
+            # Render Free Tier allows ~512MB RAM, so keeping 1-2MB string in memory is fine.
+            # We already track file size in file_filter (MAX 200KB-1MB usually).
+            
+            # 1. Keyword Filtering (Fast, runs on FULL code)
             self.logger.info("Running Keyword Filter...")
             is_suspicious, categories, risk_score = self.filter.scan(code)
             self.logger.info(f"Filter result: suspicious={is_suspicious}, score={risk_score}")
             
-            # 2. Parsing (Lightweight)
+            # 2. Parsing (Lightweight, runs on FULL code)
             self.logger.info("Running Parser...")
             structure = self.parser.parse(code, file_path)
             
-            # 3. Semantic Analysis (Lightweight)
+            # 3. Semantic Analysis (Lightweight, runs on FULL code)
             self.logger.info("Running Semantic Analysis...")
             semantic_result = self.semantic.analyze(code, file_path)
             semantic_findings = semantic_result.get('findings', []) if isinstance(semantic_result, dict) else semantic_result
             self.logger.info(f"Found {len(semantic_findings)} semantic hints")
             
-            # 4. AI Malicious Detection (Local, no LLM)
+            # Create Truncated Version for LLM Context & AI Scan (if expensive)
+            # AI Malicious Detector uses TF-IDF/ML, might differ performance-wise.
+            # Keeping AI Detector on full code if < 100KB, else truncate? 
+            # Let's keep AI Detector on full code too, it's local.
+            
+            # 4. AI Malicious Detection (Local, no LLM, runs on FULL code)
             ai_scan = self.ai_detector.run_full_ai_malicious_scan(code)
             self.logger.info(f"AI scan: {ai_scan.get('risk_level', 'UNKNOWN')}")
 
@@ -115,8 +117,8 @@ class SecurityPipeline:
                     "status": status,
                     "reason": "Fast scan completed (Local Analysis only).",
                     "risk_score": risk_score,
-                    "findings": semantic_findings[:10],
-                    "semantic_hints": semantic_findings[:10],
+                    "findings": semantic_findings[:500],
+                    "semantic_hints": semantic_findings[:500],
                     "ai_malicious_risk": ai_scan,
                     "categories": categories
                 }
@@ -129,12 +131,14 @@ class SecurityPipeline:
                         "status": status,
                         "reason": "Local analysis only (No LLM configured).",
                         "risk_score": risk_score,
-                        "findings": semantic_findings[:10],
+                        "findings": semantic_findings[:500],
                         "ai_malicious_risk": ai_scan
                     }
 
                 self.logger.info("Running lightweight LLM analysis...")
-                plan = self._run_phase1(code[:5000], structure, categories, semantic_findings[:5])
+                # Truncate code for LLM to save tokens/memory
+                truncated_code = code[:10000] 
+                plan = self._run_phase1(truncated_code, structure, categories, semantic_findings[:5])
                 
                 if not isinstance(plan, dict):
                     plan = {"risk_level": "UNKNOWN", "error": "Invalid response"}
@@ -142,7 +146,7 @@ class SecurityPipeline:
                 return {
                     "status": "VULNERABLE" if plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"] else "SAFE",
                     "risk_score": risk_score,
-                    "findings": semantic_findings[:10],
+                    "findings": semantic_findings[:500],
                     "plan": plan,
                     "ai_malicious_risk": ai_scan,
                     "reason": f"Hybrid scan: {plan.get('reasoning', 'Analysis complete')}"
@@ -158,24 +162,37 @@ class SecurityPipeline:
                     }
 
                 self.logger.info("Phase 1: Planning...")
-                plan = self._run_phase1(code[:5000], structure, categories, semantic_findings[:10])
+                # Truncate code for LLM to save tokens/memory
+                truncated_code = code[:10000]
+                plan = self._run_phase1(truncated_code, structure, categories, semantic_findings[:10])
                 
                 if not isinstance(plan, dict):
                     plan = {"risk_level": "UNKNOWN"}
 
-                # Only run Phase 2 if Phase 1 found something
-                if plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"]:
-                    self.logger.info("Phase 2: Deep Analysis...")
+                # Only run Phase 2 if Phase 1 found something OR if we have local findings
+                # This ensures we don't skip deep analysis if regex caught something the LLM missed in the summary.
+                risk_level = plan.get("risk_level", "UNKNOWN")
+                has_local_findings = len(semantic_findings) > 0
+                
+                if risk_level in ["CRITICAL", "HIGH", "MEDIUM"] or has_local_findings:
+                    self.logger.info("Phase 2: Deep Analysis (Triggered by Risk Level or Local Findings)...")
                     if not self.phase2_provider:
                         self.phase2_provider = self.phase1_provider
-                    report = self._run_phase2(code, plan, semantic_findings[:10])
+                    report = self._run_phase2(code, plan, semantic_findings[:20])
                     
                     if not isinstance(report, dict):
                         report = {"status": "ERROR", "findings": []}
                     
+                    # Merge regex findings with LLM findings
+                    llm_findings = report.get("findings", [])
+                    all_findings = semantic_findings + llm_findings
+                    
+                    # Deduplicate based on line number + type (naive)
+                    # Actually, let's just return both, the UI handles lists.
+                    
                     return {
                         "status": report.get("status", "UNKNOWN"),
-                        "findings": report.get("findings", [])[:10],
+                        "findings": all_findings[:50], # Return merged list
                         "plan": plan,
                         "ai_malicious_risk": ai_scan
                     }
@@ -183,7 +200,7 @@ class SecurityPipeline:
                     return {
                         "status": "SAFE",
                         "plan": plan,
-                        "findings": [],
+                        "findings": semantic_findings, # Return local info even if safe
                         "ai_malicious_risk": ai_scan,
                         "reason": "Phase 1 found low risk, skipping deep analysis."
                     }

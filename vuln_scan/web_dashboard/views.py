@@ -211,6 +211,27 @@ def dashboard(request):
         if last_scan:
             context['last_findings'] = last_scan.get_findings()
             context['last_result'] = last_scan.get_full_result()
+            
+            # Calculate Score/Grade
+            crit, high, med, low = 0, 0, 0, 0
+            try:
+                if hasattr(last_scan, 'critical_count'): # CodeScanHistory
+                    crit = last_scan.critical_count
+                    high = last_scan.high_count
+                    med = last_scan.medium_count
+                    low = last_scan.low_count
+                else: # ScanProject
+                    for f in last_scan.file_results.all():
+                        if f.severity == 'CRITICAL': crit += 1
+                        elif f.severity == 'HIGH': high += 1
+                        elif f.severity == 'MEDIUM': med += 1
+                        elif f.severity == 'LOW': low += 1
+            except Exception:
+                pass # safely fallback to 0/0/0/0 -> Grade A (100%)
+                
+            metrics = calculate_security_metrics(crit, high, med, low)
+            context['security_grade'] = metrics['grade']
+            context['security_score'] = metrics['score']
         
         return render(request, "vuln_scan/dashboard.html", context)
 
@@ -337,6 +358,17 @@ def dashboard(request):
             
             # Save history
             save_scan_history(request.user, filename, result, mode, file_hash)
+            
+            # Calculate Grade for Frontend
+            findings = result.get('findings', [])
+            crit = len([f for f in findings if f.get('severity', '').lower() == 'critical'])
+            high = len([f for f in findings if f.get('severity', '').lower() == 'high'])
+            med = len([f for f in findings if f.get('severity', '').lower() == 'medium'])
+            low = len([f for f in findings if f.get('severity', '').lower() == 'low'])
+            
+            metrics = calculate_security_metrics(crit, high, med, low)
+            result['security_grade'] = metrics['grade']
+            result['security_score'] = metrics['score']
             
             return JsonResponse(result)
 
@@ -532,7 +564,7 @@ def get_scan_result(request, scan_id):
 import shutil
 from django.utils import timezone
 from ..services.repo_fetcher import clone_repo
-from ..services.result_aggregator import update_project_stats, create_file_result
+from ..services.result_aggregator import update_project_stats, create_file_result, calculate_security_metrics
 from ..services.llm_dispatcher import LLMDispatcher
 from ..services.file_filter import is_safe_file
 
@@ -712,9 +744,16 @@ def project_status(request, project_id):
         project = ScanProject.objects.get(id=project_id, user=request.user)
         
         findings_data = []
+        crit, high, med, low = 0, 0, 0, 0
+        
         # Return ALL findings so analysis isn't empty
         for f in project.file_results.all().order_by('-risk_score'):
-            # Only include if interesting? No, include all for complete analysis
+            # Tally aggregation
+            if f.severity == 'CRITICAL': crit += 1
+            elif f.severity == 'HIGH': high += 1
+            elif f.severity == 'MEDIUM': med += 1
+            elif f.severity == 'LOW': low += 1
+            
             findings_data.append({
                 "filename": f.filename,
                 "severity": f.severity,
@@ -723,12 +762,14 @@ def project_status(request, project_id):
                 "file_id": f.id  # Add file ID for drill-down
             })
             
+        metrics = calculate_security_metrics(crit, high, med, low)
+            
         return JsonResponse({
             "status": project.status,
             "total": project.total_files,
             "processed": project.processed_files,
-            "normalized_score": min(100, int((project.risk_score / max(1, project.total_files * 25)) * 100)) if project.total_files > 0 else 0,
-            "grade": "A" if project.risk_score == 0 else "F" if (project.risk_score / max(1, project.total_files)) > 50 else "C", # Simplified Grading
+            "normalized_score": metrics['score'],
+            "grade": metrics['grade'],
             "project_name": project.name,
             "findings": findings_data,
             "repo_url": project.repo_url

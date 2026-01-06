@@ -99,9 +99,18 @@
             </div>
         </div>
         <div class="card p-4 border border-border bg-card">
-            <p class="text-xs text-muted uppercase tracking-wider mb-1">Last Scan</p>
-            <!-- Fixed Last Scan Time -->
-            <div class="font-mono text-lg text-foreground">{% if last_scan %}{{ last_scan.created_at|date:"M d, H:i" }}{% else %}--{% endif %}</div>
+            <p class="text-xs text-muted uppercase tracking-wider mb-1">Security Grade</p>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-bold {% if security_grade == 'A' %}text-green-500{% elif security_grade == 'B' %}text-teal-500{% elif security_grade == 'C' %}text-yellow-500{% elif security_grade == 'D' %}text-orange-500{% else %}text-red-500{% endif %}" id="statGrade">
+                    {% if security_grade %}{{ security_grade }}{% else %}-{% endif %}
+                </span>
+                <span class="text-xs text-muted font-mono" id="statScore">
+                    {% if security_score %}{{ security_score }}%{% else %}0%{% endif %}
+                </span>
+            </div>
+            <div class="text-[10px] text-muted mt-1" id="statDate">
+                {% if last_scan %}{{ last_scan.created_at|date:"M d, H:i" }}{% else %}No scans yet{% endif %}
+            </div>
         </div>
         <div class="card p-4 border border-border bg-card">
             <p class="text-xs text-muted uppercase tracking-wider mb-1">Issues Found</p>
@@ -223,7 +232,7 @@
                 </div>
                 <div class="divide-y divide-border/50 max-h-[600px] overflow-y-auto">
                     {% for item in combined_history %}
-                    <div class="p-3 hover:bg-muted/30 transition-colors cursor-pointer group" onclick="loadHistoryItem({{ item.id }}, '{{ item.type }}')">
+                    <div class="p-3 hover:bg-muted/30 transition-colors cursor-pointer group" onclick="loadHistoryItem('{{ item.id }}', '{{ item.type }}')">
                         <div class="flex justify-between items-start mb-1">
                             <div class="flex items-center gap-2 overflow-hidden">
                                 <i class="fas {% if item.type == 'file' %}fa-file-code{% else %}fa-project-diagram{% endif %} text-xs text-muted-foreground"></i>
@@ -310,6 +319,12 @@ async function startFileScan(file) {
     document.getElementById('scanStatus').innerText = "SCANNING...";
     document.getElementById('scanStatus').className = "text-teal-500 animate-pulse uppercase tracking-wider";
     
+    // Reset Stats
+    document.getElementById('statGrade').innerText = "-";
+    document.getElementById('statScore').innerText = "0%";
+    document.getElementById('statGrade').className = "text-2xl font-bold";
+    document.getElementById('statIssues').innerText = "0";
+
     log(`Initializing File Scan...`, 'info');
     log(`Target: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
     log(`Mode: ${currentMode.toUpperCase()}`, 'info');
@@ -353,6 +368,12 @@ async function startRepoScan() {
     
     document.getElementById('scanStatus').innerText = "INITIALIZING...";
     document.getElementById('scanStatus').className = "text-teal-500 animate-pulse uppercase tracking-wider";
+    
+    // Reset Stats
+    document.getElementById('statGrade').innerText = "-";
+    document.getElementById('statScore').innerText = "0%";
+    document.getElementById('statGrade').className = "text-2xl font-bold";
+    document.getElementById('statIssues').innerText = "0";
     
     // Phase 1: Clone & Index
     log(`Initializing Repo Scan...`, 'info');
@@ -485,12 +506,12 @@ function addFindingRow(issue, filename) {
     }
 
     tr.innerHTML = `
-        <td class="p-3 ${sevColor} font-bold align-top">${issue.severity.toUpperCase()}</td>
-        <td class="p-3 text-gray-300 align-top">${issue.type}</td>
-        <td class="p-3 text-gray-400 text-xs font-mono align-top">${filename || '-'}</td>
+        <td class="p-3 ${sevColor} font-bold align-top whitespace-nowrap">${issue.severity.toUpperCase()}</td>
+        <td class="p-3 text-gray-300 align-top whitespace-nowrap">${issue.type}</td>
+        <td class="p-3 text-gray-400 text-xs font-mono align-top whitespace-nowrap" title="${filename}">${filename ? (filename.length > 20 ? filename.substr(0,17)+'...' : filename) : '-'}</td>
         <td class="p-3 text-teal-500 font-mono text-xs align-top">${lineNum}</td>
-        <td class="p-3 text-gray-300 whitespace-pre-wrap align-top">
-            ${issue.description || issue.reason}
+        <td class="p-3 text-gray-300 align-top">
+            <div class="mb-2">${issue.description || issue.reason}</div>
             ${fixHtml}
         </td>
     `;
@@ -505,6 +526,22 @@ function renderResults(data) {
     
     // Stats Update
     document.getElementById('statIssues').innerText = data.findings ? data.findings.length : 0;
+    
+    // Grade Update
+    if (data.security_grade) {
+        const gradeEl = document.getElementById('statGrade');
+        const scoreEl = document.getElementById('statScore');
+        gradeEl.innerText = data.security_grade;
+        scoreEl.innerText = (data.security_score || 0) + '%';
+        
+        // Color
+        gradeEl.className = "text-2xl font-bold";
+        if(data.security_grade === 'A') gradeEl.classList.add('text-green-500');
+        else if(data.security_grade === 'B') gradeEl.classList.add('text-teal-500');
+        else if(data.security_grade === 'C') gradeEl.classList.add('text-yellow-500');
+        else if(data.security_grade === 'D') gradeEl.classList.add('text-orange-500');
+        else gradeEl.classList.add('text-red-500');
+    }
     
     document.getElementById('findingsTableBody').innerHTML = '';
     document.getElementById('detailReport').classList.add('hidden');

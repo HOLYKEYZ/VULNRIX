@@ -75,3 +75,24 @@ def create_file_result(project: ScanProject, filename: str, result: Dict[str, An
     file_result.save()
     
     return file_result
+
+def calculate_security_metrics(critical: int, high: int, medium: int, low: int) -> Dict[str, Any]:
+    """
+    Calculate Security Score (0-100) and Grade (A-F).
+    Base: 100
+    Penalties: Critical=20, High=10, Medium=5, Low=1
+    """
+    penalty = (critical * 20) + (high * 10) + (medium * 5) + (low * 1)
+    score = max(0, 100 - penalty)
+    
+    if score >= 90: grade = 'A'
+    elif score >= 80: grade = 'B'
+    elif score >= 70: grade = 'C'
+    elif score >= 60: grade = 'D'
+    else: grade = 'F'
+    
+    return {
+        "score": score,
+        "grade": grade,
+        "penalty": penalty
+    }

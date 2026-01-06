@@ -18,9 +18,36 @@ BINARY_EXTENSIONS = {
 
 # Allowed source code extensions (Allow-list approach is safer)
 SOURCE_EXTENSIONS = {
-    '.py', '.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.c', '.cpp', '.h', '.hpp',
-    '.java', '.go', '.rs', '.php', '.rb', '.sh', '.bash', '.yaml', '.yml', '.json',
-    '.xml', '.sql', '.dockerfile', 'dockerfile', '.lock'
+    # Core Languages
+    '.py', '.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.scss', '.less',
+    '.c', '.cpp', '.h', '.hpp', '.cc', '.cxx',
+    '.java', '.jar', '.gradle',
+    '.go', '.mod', '.sum',
+    '.rs',
+    '.php',
+    '.rb', '.erb', '.gemfile',
+    '.cs', '.csproj', '.sln',
+    '.swift',
+    '.kt', '.kts',
+    '.scala',
+    '.pl', '.pm',
+    '.lua',
+    '.r',
+    
+    # Scripts & Shell
+    '.sh', '.bash', '.zsh', '.fish', '.bat', '.ps1', '.cmd',
+    
+    # Config & IaC
+    '.yaml', '.yml', '.json', '.xml', '.toml', '.ini', '.conf', '.cfg',
+    '.tf', '.hcl', '.tfvars',
+    '.dockerfile', 'dockerfile',
+    '.env', '.properties',
+    
+    # Web Frameworks
+    '.vue', '.svelte', '.astro',
+    
+    # Database
+    '.sql', '.psql',
 }
 
 def is_safe_file(file_path: str) -> bool:

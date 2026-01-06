@@ -46,10 +46,27 @@ class SemanticAnalyzer:
         }
     def _init_secrets(self):
         self.SECRETS = [
-            r"password\s*=\s*['\"][^'\"]+['\"]", r"api_key\s*=\s*['\"][^'\"]+['\"]",
-            r"API_KEY\s*=\s*['\"][^'\"]+['\"]", r"secret\s*=\s*['\"][^'\"]+['\"]",
-            r"TOKEN\s*=\s*['\"][^'\"]+['\"]", r"AWS_ACCESS_KEY", r"AWS_SECRET_KEY",
-            r"-----BEGIN.*KEY-----", r"sk-[a-zA-Z0-9]{20,}", r"ghp_[a-zA-Z0-9]{36}",
+            # Cloud & Infrastructure
+            r"(?i)aws_access_key_id\s*=\s*['\"][A-Z0-9]{20}['\"]",
+            r"(?i)aws_secret_access_key\s*=\s*['\"][A-Za-z0-9/+=]{40}['\"]",
+            r"AKIA[0-9A-Z]{16}",  # AWS Access Key ID
+            r"(?i)google_api_key\s*=\s*['\"]AIza[0-9A-Za-z-_]{35}['\"]",  # Google API Key
+            r"(?i)azure_storage_account\s*=\s*['\"][a-z0-9]{3,24}['\"]",
+            r"(?i)azure_storage_access_key\s*=\s*['\"][a-zA-Z0-9/+=]{88}['\"]",
+            
+            # SaaS & API Keys
+            r"(?i)stripe_secret_key\s*=\s*['\"]sk_live_[0-9a-zA-Z]{24}['\"]",
+            r"(?i)stripe_publishable_key\s*=\s*['\"]pk_live_[0-9a-zA-Z]{24}['\"]",
+            r"(?i)slack_api_token\s*=\s*['\"]xox[baprs]-[a-zA-Z0-9-]{10,}['\"]",
+            r"(?i)facebook_access_token\s*=\s*['\"][a-zA-Z0-9]+['\"]",
+            r"(?i)twitter_consumer_key\s*=\s*['\"][a-zA-Z0-9]{15,25}['\"]",
+            r"(?i)github_token\s*=\s*['\"]ghp_[a-zA-Z0-9]{36}['\"]",
+            
+            # Application Secrets
+            r"(?i)(password|passwd|pwd|secret|token|api_key|apikey|access_token)\s*[:=]\s*['\"][a-zA-Z0-9@#$%^&+=]{8,}['\"]",
+            r"(?i)bearer\s+['\"][a-zA-Z0-9-._~+/]+=*['\"]",
+            r"-----BEGIN\s+([A-Z]+\s+)?PRIVATE\s+KEY-----",
+            r"-----BEGIN\s+CERTIFICATE-----",
         ]
     
     def _init_bugs(self):
@@ -59,7 +76,8 @@ class SemanticAnalyzer:
             "Uninitialized Variable": [r"char\s+\w+\[[^\]]+\];[^=]*printf", r"int\s+\w+;[^=]*\w+\s*[+\-*/]"],
             "Use After Free": [r"free\s*\([^)]+\);[^}]*\*", r"free\s*\([^)]+\);[^}]*printf"],
             "Double Free": [r"free\s*\([^)]+\);[^}]*free\s*\("],
-            "Memory Leak": [r"malloc\s*\([^)]+\)(?!.*free)", r"new\s+\w+(?!.*delete)"],
+            # Memory Leak: specific for C/C++ manuals.
+            "Memory Leak": [r"malloc\s*\([^)]+\)(?!.*free)"],
             
             # Arithmetic Bugs
             "Division by Zero": [r"/\s*0[^.]", r"%\s*0[^.]"],
@@ -75,7 +93,7 @@ class SemanticAnalyzer:
             "Resource Leak": [r"fopen\s*\([^)]+\)(?!.*fclose)", r"open\s*\([^)]+\)(?!.*close)"],
             "Unchecked Return Value": [r"fopen\s*\([^)]+\);[^}]*fread", r"malloc\s*\([^)]+\);[^}]*strcpy"],
             "File Descriptor Leak": [r"socket\s*\([^)]+\)(?!.*close)", r"open\s*\([^)]+\)(?!.*close)"],
-            
+
             # Concurrency Bugs & Race Conditions
             "Race Condition": [r"pthread_create", r"std::thread", r"fork\s*\(\)", r"CreateThread"],
             "Deadlock Risk": [r"pthread_mutex_lock[^}]*pthread_mutex_lock", r"lock\s*\([^)]+\)[^}]*lock\s*\("],
@@ -175,6 +193,19 @@ class SemanticAnalyzer:
             "Unsafe Function (strcpy)": [r"\bstrcpy\s*\("],
             "Unsafe Function (sprintf)": [r"\bsprintf\s*\("],
         }
+        
+    def _is_relevant_bug(self, bug_type: str, lang: str) -> bool:
+        """Check if a bug type is relevant for the given language"""
+        c_cpp_only = [
+            "Null Pointer Dereference", "Use After Free", "Double Free", 
+            "Memory Leak", "Type Confusion", "Buffer Overflow",
+            "Signed/Unsigned Mismatch"
+        ]
+        
+        if lang not in ["c", "cpp"] and any(b in bug_type for b in c_cpp_only):
+            return False
+            
+        return True
     
     def _init_sanitizers(self):
         self.SANITIZERS = {
@@ -188,34 +219,44 @@ class SemanticAnalyzer:
                 "Dangerous eval()": r"\beval\s*\(",
                 "Dangerous document.write()": r"document\.write\s*\(",
                 "Dangerous innerHTML": r"\.innerHTML\s*=",
-                "Dangerous setTimeout with string": r"setTimeout\s*\(\s*['\"]",
-                "Dangerous setInterval with string": r"setInterval\s*\(\s*['\"]",
-                "Dangerous Function constructor": r"new\s+Function\s*\(",
+                "React dangerouslySetInnerHTML": r"dangerouslySetInnerHTML\s*=|dangerouslySetInnerHTML\s*:",
+                "Vue v-html": r"v-html",
+                "Angular SafeHtml": r"bypassSecurityTrust",
+                "JWT Decode (Unverified)": r"jwt\.decode\s*\(",
+                "Dangerous setTimeout": r"setTimeout\s*\(\s*['\"]",
+                "Dangerous setInterval": r"setInterval\s*\(\s*['\"]",
+                "Function Constructor": r"new\s+Function\s*\(",
                 "Open Redirect": r"window\.location\s*(\.href)?\s*=",
                 "Insecure Cookie": r"document\.cookie\s*=",
                 "Insecure LocalStorage": r"localStorage\.setItem\s*\(",
-                "Insecure SessionStorage": r"sessionStorage\.setItem\s*\(",
                 "Prototype Pollution": r"__proto__|constructor\.prototype",
                 "Insecure HTTP Fetch": r"fetch\s*\(\s*['\"]http:",
-                "Insecure WebSocket": r"new\s+WebSocket\s*\(\s*['\"]ws:",
-                "jQuery HTML Injection": r"\$\s*\([^)]*\)\s*\.html\s*\(",
-                "Iframe Injection": r"createElement\s*\(\s*['\"]iframe['\"]",
-                "JSONP Callback": r"callback\s*=|jsonp",
-                "Insecure CORS": r"mode\s*:\s*['\"]no-cors['\"]",
+                "NoSQL Injection": r"\$where\s*:\s*|db\.[a-z]+\.find\s*\(\s*\{",
+                "API Key Exposure": r"['\"](AIza|sk_live)[a-zA-Z0-9-_]+['\"]",
+            },
+            "typescript": {
+                "Dangerous eval()": r"\beval\s*\(",
+                "Dangerous innerHTML": r"\.innerHTML\s*=",
+                "React dangerouslySetInnerHTML": r"dangerouslySetInnerHTML\s*=|dangerouslySetInnerHTML\s*:",
+                "Type Assertion Bypass": r"as\s+any|<any>",
+                "Prototype Pollution": r"__proto__|constructor\.prototype",
+                "Open Redirect": r"window\.location\s*(\.href)?\s*=",
             },
             "python": {
                 "Dangerous eval()": r"\beval\s*\(",
                 "Dangerous exec()": r"\bexec\s*\(",
-                "OS Command Injection": r"os\.system\s*\(|subprocess\.call\s*\(|subprocess\.run\s*\(",
+                "OS Command Injection": r"os\.system\s*\(|subprocess\.call\s*\(|subprocess\.run\s*\(|subprocess\.Popen\s*\(|os\.popen\s*\(|commands\.getstatusoutput\s*\(",
                 "Shell Injection": r"shell\s*=\s*True",
-                "SQL Injection": r"cursor\.execute\s*\(.*%|\.execute\s*\(.*\+",
-                "Path Traversal": r"open\s*\(.*\+|os\.path\.join\s*\(.*\+",
-                "Pickle Deserialization": r"pickle\.loads?\s*\(",
+                "SQL Injection": r"cursor\.execute\s*\(.*%|\.execute\s*\(.*\+|text\s*\(.*['\"]\%.*['\"]",
+                "Path Traversal": r"open\s*\(.*\+|os\.path\.join\s*\(.*\+|file\s*\(",
+                "Pickle Deserialization": r"pickle\.loads?\s*\(|cPickle\.loads?\s*\(",
                 "YAML Unsafe Load": r"yaml\.load\s*\([^,)]*\)(?!.*Loader)",
-                "Template Injection": r"render_template_string\s*\(",
+                "Jinja2 SSTI": r"render_template_string\s*\(|environment\.from_string",
                 "Insecure Random": r"random\.random\s*\(|random\.randint\s*\(",
-                "Hardcoded Password": r"password\s*=\s*['\"][^'\"]+['\"]",
-                "Debug Mode": r"DEBUG\s*=\s*True|debug\s*=\s*True",
+                "Hardcoded Password": r"password\s*=\s*['\"][^'\"]+['\"]|pass\s*=\s*['\"][^'\"]+['\"]|secret\s*=\s*['\"][^'\"]+['\"]",
+                "Debug Mode Enabled": r"DEBUG\s*=\s*True|debug\s*=\s*True|app\.run\s*\(.*debug\s*=\s*True",
+                "Assert Used in Production": r"assert\s+",
+                "Insecure Temp File": r"mktemp\s*\(|tempfile\.mktemp\s*\(",
                 "Insecure Hash": r"hashlib\.md5\s*\(|hashlib\.sha1\s*\(",
             },
             "java": {
@@ -225,12 +266,19 @@ class SemanticAnalyzer:
                 "Path Traversal": r"new\s+File\s*\(.*\+",
                 "Deserialization": r"ObjectInputStream.*readObject\s*\(",
                 "XXE Vulnerability": r"DocumentBuilderFactory|SAXParserFactory",
-                "LDAP Injection": r"DirContext\.search\s*\(.*\+",
-                "Reflection Abuse": r"Class\.forName\s*\(|Method\.invoke\s*\(",
                 "Insecure Random": r"new\s+Random\s*\(\)|Math\.random\s*\(",
-                "Hardcoded Credentials": r"password\s*=\s*['\"][^'\"]+['\"]",
                 "Weak Crypto": r"DES|RC4|MD5|SHA1(?!-)",
                 "Trust All Certificates": r"TrustManager|HostnameVerifier",
+                "Spring Actuator Exposure": r"management\.endpoints\.web\.exposure\.include\s*=\s*['\"]\*['\"]",
+            },
+            "go": {
+                "Command Injection": r"exec\.Command\s*\(.*\+",
+                "SQL Injection": r"db\.Query\s*\(.*\+|db\.Exec\s*\(.*\+",
+                "Path Traversal": r"os\.Open\s*\(.*\+|ioutil\.ReadFile\s*\(.*\+",
+                "Weak Random": r"rand\.Int\s*\(|math/rand",
+                "Insecure TLS": r"InsecureSkipVerify\s*:\s*true",
+                "Goroutine Leak": r"go\s+func\s*\(",
+                "Unsafe Pointer": r"unsafe\.Pointer",
             },
             "php": {
                 "Dangerous eval()": r"\beval\s*\(",
@@ -239,115 +287,137 @@ class SemanticAnalyzer:
                 "File Inclusion": r"include\s*\(.*\$|require\s*\(.*\$",
                 "Deserialization": r"unserialize\s*\(",
                 "XSS": r"echo\s+\$|print\s+\$",
-                "Path Traversal": r"file_get_contents\s*\(.*\$|fopen\s*\(.*\$",
-                "Weak Random": r"\brand\s*\(|mt_rand\s*\(",
-                "Insecure Hash": r"\bmd5\s*\(|\bsha1\s*\(",
-            },
-            "go": {
-                "Command Injection": r"exec\.Command\s*\(.*\+",
-                "SQL Injection": r"db\.Query\s*\(.*\+|db\.Exec\s*\(.*\+",
-                "Path Traversal": r"os\.Open\s*\(.*\+|ioutil\.ReadFile\s*\(.*\+",
-                "Weak Random": r"rand\.Int\s*\(|math/rand",
-                "Hardcoded Credentials": r"password\s*:=\s*['\"][^'\"]+['\"]",
-                "Insecure TLS": r"InsecureSkipVerify\s*:\s*true",
-                "HTTP without TLS": r"http\.Get\s*\(['\"]http:|http\.Post\s*\(['\"]http:",
-                "Race Condition": r"go\s+func\s*\(",
             },
             "c": {
                 "Buffer Overflow (strcpy)": r"\bstrcpy\s*\(",
                 "Buffer Overflow (strcat)": r"\bstrcat\s*\(",
                 "Buffer Overflow (sprintf)": r"\bsprintf\s*\(",
                 "Buffer Overflow (gets)": r"\bgets\s*\(",
+                "Buffer Overflow (memcpy)": r"\bmemcpy\s*\(",
                 "Format String": r"printf\s*\([^,\"]*\)",
                 "Memory Leak": r"malloc\s*\([^)]+\)(?!.*free)",
                 "Use After Free": r"free\s*\([^)]+\);[^}]*\*",
                 "Double Free": r"free\s*\([^)]+\);[^}]*free\s*\(",
-                "Command Injection": r"\bsystem\s*\(|\bpopen\s*\(",
+                "Command Injection": r"\bsystem\s*\(|\bpopen\s*\(|\bexecl\s*\(|\bexecv\s*\(",
                 "Hardcoded Credentials": r"password\s*=\s*\"[^\"]+\"",
                 "Weak Random": r"\brand\s*\(|\bsrand\s*\(",
-                "Insecure Functions": r"\bscanf\s*\(",
+                "Insecure Functions": r"\bscanf\s*\(|\bgets\s*\(",
             },
             "cpp": {
-                "Buffer Overflow (strcpy)": r"\bstrcpy\s*\(",
-                "Buffer Overflow (strcat)": r"\bstrcat\s*\(",
-                "Buffer Overflow (sprintf)": r"\bsprintf\s*\(",
+                "Buffer Overflow": r"\bstrcpy\s*\(|\bstrcat\s*\(|\bsprintf\s*\(",
                 "Memory Leak": r"new\s+\w+(?!.*delete)|malloc\s*\((?!.*free)",
                 "Use After Free": r"delete\s+\w+;[^}]*\*\w+",
-                "Double Delete": r"delete\s+\w+;[^}]*delete\s+\w+",
                 "Command Injection": r"\bsystem\s*\(|\bpopen\s*\(",
                 "Unsafe Cast": r"reinterpret_cast\s*<|const_cast\s*<",
-                "Race Condition": r"std::thread\s*\(|pthread_create\s*\(",
             },
             "csharp": {
                 "SQL Injection": r"SqlCommand\s*\(.*\+|ExecuteReader\s*\(.*\+",
                 "Command Injection": r"Process\.Start\s*\(.*\+",
-                "Path Traversal": r"File\.ReadAllText\s*\(.*\+|File\.Open\s*\(.*\+",
                 "Deserialization": r"BinaryFormatter\.Deserialize\s*\(",
                 "XSS": r"Response\.Write\s*\(.*\+|Html\.Raw\s*\(",
-                "XXE": r"XmlDocument\.Load\s*\(|XDocument\.Load\s*\(",
-                "Weak Random": r"new\s+Random\s*\(\)",
-                "Insecure Crypto": r"DESCryptoServiceProvider|MD5CryptoServiceProvider",
+                "Unsafe Block": r"unsafe\s*\{",
             },
             "ruby": {
-                "Command Injection": r"\bsystem\s*\(|\bexec\s*\(|`[^`]*`|%x\{",
+                "Command Injection": r"\bsystem\s*\(|\bexec\s*\(|`[^`]*`",
                 "SQL Injection": r"find_by_sql\s*\(.*\+|where\s*\(.*#\{",
                 "Code Injection": r"\beval\s*\(|instance_eval\s*\(",
-                "Path Traversal": r"File\.open\s*\(.*\+|File\.read\s*\(.*\+",
                 "Deserialization": r"Marshal\.load\s*\(|YAML\.load\s*\(",
-                "XSS": r"\.html_safe|raw\s*\(",
-                "Mass Assignment": r"params\.permit!",
-                "Open Redirect": r"redirect_to\s*\(.*params",
             },
             "rust": {
                 "Unsafe Block": r"unsafe\s*\{",
-                "Memory Leak": r"Box::leak\s*\(|mem::forget\s*\(",
+                "Memory Leak": r"Box::leak\s*\(",
                 "Command Injection": r"Command::new\s*\(.*\+",
-                "Path Traversal": r"File::open\s*\(.*\+",
-                "Panic in Library": r"panic!\s*\(|unwrap\s*\(\)",
+                "Panic in Library": r"unwrap\s*\(\)",
             },
             "swift": {
-                "Command Injection": r"Process\s*\(\)\.launch|NSTask",
+                "Command Injection": r"Process\s*\(\)\.launch",
                 "SQL Injection": r"sqlite3_exec\s*\(.*\+",
-                "Weak Random": r"arc4random\s*\(|drand48\s*\(",
-                "Insecure Network": r"URLRequest.*http:|allowsArbitraryLoads",
                 "Force Unwrapping": r"!\s*$|!\.",
             },
             "kotlin": {
-                "SQL Injection": r"rawQuery\s*\(.*\+|execSQL\s*\(.*\+",
+                "SQL Injection": r"rawQuery\s*\(.*\+",
                 "Command Injection": r"Runtime\.getRuntime\(\)\.exec\s*\(",
-                "Insecure Random": r"Random\s*\(\)|Math\.random\s*\(",
-                "WebView JavaScript": r"setJavaScriptEnabled\s*\(\s*true",
-            },
-            "typescript": {
-                "Dangerous eval()": r"\beval\s*\(",
-                "Dangerous innerHTML": r"\.innerHTML\s*=",
-                "Type Assertion Bypass": r"as\s+any|<any>",
-                "Prototype Pollution": r"__proto__|constructor\.prototype",
-                "Open Redirect": r"window\.location\s*(\.href)?\s*=",
             },
             "sql": {
-                "Dynamic SQL": r"EXECUTE\s+IMMEDIATE|sp_executesql|EXEC\s*\(",
+                "Dynamic SQL": r"EXECUTE\s+IMMEDIATE|sp_executesql",
                 "Privilege Escalation": r"GRANT\s+ALL|WITH\s+GRANT\s+OPTION",
-                "Dangerous DROP": r"DROP\s+TABLE|DROP\s+DATABASE",
             },
             "shell": {
                 "Command Injection": r"\$\([^)]+\)|`[^`]+`|\beval\s+",
-                "Path Traversal": r"\.\./|cd\s+\$",
+                "Path Traversal": r"\.\./",
                 "World Writable": r"chmod\s+777|chmod\s+666",
                 "Hardcoded Credentials": r"password=|PASSWORD=",
             },
+            # --- NEW INFRASTRUCTURE SUPPORT ---
+            "dockerfile": {
+                "Runs as Root": r"USER\s+root",
+                "Missing User Instruction": r"^(?!.*USER).+$", # Heuristic/complex for regex
+                "Use of ADD instead of COPY": r"^ADD\s+",
+                "Sudo Usage": r"sudo\s+",
+                "Use of 'latest' tag": r":latest",
+                "Exposed SSH Port": r"EXPOSE\s+22",
+                "Secrets in ENV": r"ENV\s+(PASSWORD|SECRET|KEY|TOKEN)",
+            },
+            "terraform": {
+                "Open Security Group": r"cidr_blocks\s*=\s*\[\"0.0.0.0/0\"\]",
+                "Public S3 Bucket": r"acl\s*=\s*\"public-read\"",
+                "Unencrypted Storage": r"encrypted\s*=\s*false",
+                "Hardcoded Secret": r"(secret|key|password)\s*=\s*\"[^\"]+\"",
+            },
+            "yaml": {
+                "Privileged Container": r"privileged:\s*true",
+                "Host Network Access": r"hostNetwork:\s*true",
+                "Run as Root": r"runAsUser:\s*0",
+                "Missing CPU/Memory Limits": r"resources:\s*\{\}", 
+                "Docker Socket Mount": r"path:\s*/var/run/docker.sock",
+            }
         }
+
+
 
     def detect_language(self, filename: str, code: str = "") -> str:
         """Detect programming language from filename extension"""
         ext_map = {
-            ".py": "python", ".js": "javascript", ".ts": "typescript",
-            ".java": "java", ".go": "go", ".php": "php", ".rb": "ruby",
-            ".c": "c", ".h": "c", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp",
-            ".cs": "csharp", ".rs": "rust", ".swift": "swift", ".kt": "kotlin",
-            ".sql": "sql", ".sh": "shell", ".bash": "shell",
+            # Low-level / Systems
+            ".py": "python", ".pyw": "python",
+            ".c": "c", ".h": "c", 
+            ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp",
+            ".rs": "rust",
+            ".go": "go",
+            
+            # Java / JVM
+            ".java": "java", ".jar": "java",
+            ".kt": "kotlin", ".kts": "kotlin",
+            ".scala": "java", # Fallback to Java rules
+            
+            # Web
+            ".js": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".jsx": "javascript",
+            ".ts": "typescript", ".tsx": "typescript",
+            ".vue": "javascript", ".svelte": "javascript", # Treat as JS for regex scan
+            ".php": "php",
+            ".rb": "ruby", ".erb": "ruby",
+            
+            # Mobile
+            ".swift": "swift",
+            ".cs": "csharp",
+            
+            # Shell
+            ".sh": "shell", ".bash": "shell", ".zsh": "shell",
+            ".bat": "shell", ".ps1": "shell", # Treat Windows shell as shell for now
+            
+            # Data / Config (Infrastructure)
+            ".sql": "sql", 
+            ".tf": "terraform", ".hcl": "terraform",
+            ".yaml": "yaml", ".yml": "yaml",
+            ".dockerfile": "dockerfile",
+            ".json": "json",
+            ".xml": "xml"
         }
         import os
+        filename_lower = filename.lower()
+        if filename_lower == "dockerfile" or filename_lower.endswith(".dockerfile"):
+            return "dockerfile"
+            
         ext = os.path.splitext(filename)[1].lower()
         return ext_map.get(ext, "unknown")
 
@@ -374,6 +444,9 @@ class SemanticAnalyzer:
         # Pass 2: Bug patterns (all languages)
         detected_bug_lines = set()
         for bug_type, patterns in self.BUGS.items():
+            if not self._is_relevant_bug(bug_type, lang):
+                continue
+                
             for pattern in patterns:
                 for i, line in enumerate(lines):
                     if re.search(pattern, line) and (i + 1, bug_type) not in detected_bug_lines:
