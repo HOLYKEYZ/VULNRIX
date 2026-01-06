@@ -93,7 +93,7 @@ gunicorn digitalshield.wsgi:application
 
 ## Author
 
-Joseph Ayanda
+Joseph Ayanda (HOLYKEYZ)
 
 ---
 
