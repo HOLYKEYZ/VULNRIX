@@ -396,6 +396,12 @@ async function startRepoScan() {
         
         if(initData.error) throw new Error(initData.error);
         
+        // Check for Large Repo Warning (Snyk Fallback)
+        if(initData.warning) {
+             alert(initData.warning);
+             log(`NOTICE: ${initData.warning}`, 'warn');
+        }
+
         const projectId = initData.project_id;
         const totalFiles = initData.total_files || 0;
         

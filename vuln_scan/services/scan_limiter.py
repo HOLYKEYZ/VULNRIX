@@ -41,10 +41,13 @@ def check_and_increment_usage(user) -> bool:
     usage.save()
     return True
 
-def validate_project_limits(file_count: int, total_size_mb: float):
+def validate_project_limits(file_count: int, total_size_mb: float, bypass: bool = False):
     """
     Validate that a project (repo/zip) is within limits.
     """
+    if bypass:
+        return # Skip checks if bypass is enabled (e.g. Snyk fallback)
+
     if file_count > MAX_FILES_PER_REPO_SCAN:
         raise ScanLimitExceeded(f"Project has {file_count} files. Max allowed is {MAX_FILES_PER_REPO_SCAN}.")
         

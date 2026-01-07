@@ -24,7 +24,7 @@ class SnykService:
     V1_URL = "https://api.snyk.io/v1"
     
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv('SNYK_API_KEY')
+        self.api_key = api_key or os.getenv('SNYK2_API_KEY') or os.getenv('SNYK_API_KEY')
         self.headers = {
             'Authorization': f'token {self.api_key}',
             'Content-Type': 'application/json'
