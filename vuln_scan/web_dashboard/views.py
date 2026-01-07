@@ -607,6 +607,17 @@ def start_repo_scan(request):
             
         # Discover files
         files_created = []
+        
+        # Check Snyk Availability
+        from scanner.services.snyk_service import get_snyk_service
+        snyk = get_snyk_service()
+        has_snyk = snyk.is_configured()
+        
+        # Limit Logic
+        current_limit = 50
+        if has_snyk:
+            current_limit = 500 # Raise limit significantly if using Snyk
+            
         for root, _, files in os.walk(project_dir):
             for file in files:
                 full_path = Path(root) / file
@@ -621,26 +632,31 @@ def start_repo_scan(request):
                     )
                     files_created.append(res)
                     
-                    # Limit to 50 files max for stability
-                    if len(files_created) >= 50:
+                    if len(files_created) >= current_limit:
                         break
-            if len(files_created) >= 50:
+            if len(files_created) >= current_limit:
                 break
         
         # Check if we hit the limit
-        exceeded_limit = len(files_created) >= 50
+        exceeded_limit = len(files_created) >= current_limit
         
         project.total_files = len(files_created)
         project.status = 'READY'
         project.save()
         
-        return JsonResponse({
+        response_data = {
             "project_id": project.id,
             "total_files": project.total_files,
             "status": "READY",
             "limit_exceeded": exceeded_limit,
-            "max_files": 50
-        })
+            "max_files": current_limit
+        }
+        
+        if has_snyk and (project.total_files > 50):
+            response_data['warning'] = "Large repository detected (>50 files). Deep analysis enabled - this may take longer."
+            response_data['snyk_enabled'] = True
+            
+        return JsonResponse(response_data)
         
     except Exception as e:
         logger.error(f"Repo Scan Start Failed: {e}")
@@ -700,12 +716,64 @@ def scan_next_file(request, project_id):
         pipeline = get_pipeline()
         dispatcher = LLMDispatcher(pipeline)
         
-        # Determine Mode (Default to hybrid if not specified, but respect user choice)
+        # Read file content
+        try:
+             with open(abs_path, 'r', encoding='utf-8', errors='ignore') as f:
+                 code_content = f.read()
+             file_size_mb = getattr(abs_path.stat(), 'st_size', 0) / (1024 * 1024)
+        except Exception as read_err:
+             code_content = ""
+             file_size_mb = 0
+
+        # --- SNYK ANALYSIS ---
+        snyk_result = None
+        snyk_findings = []
+        try:
+            from scanner.services.snyk_service import get_snyk_service
+            snyk = get_snyk_service()
+            if snyk.is_configured():
+                # Map extension to language
+                ext = abs_path.suffix.lower()
+                lang_map = {
+                    '.py': 'python', '.js': 'javascript', '.ts': 'typescript',
+                    '.java': 'java', '.go': 'go', '.rb': 'ruby', '.php': 'php',
+                    '.c': 'c', '.cpp': 'cpp', '.rs': 'rust', '.cs': 'csharp'
+                }
+                language = lang_map.get(ext, 'python')
+                
+                # Run Snyk
+                snyk_result = snyk.analyze_code(code_content, language, next_file.filename)
+                snyk_findings = snyk_result.get('findings', [])
+                for f in snyk_findings:
+                    f['source'] = 'snyk'
+        except Exception as snyk_err:
+            logger.warning(f"Snyk loop error: {snyk_err}")
+
+        # Determine Scan Strategy
+        # If file is HUGE (>2MB) and we have Snyk results, skip local to save time/memory
+        skip_local = (file_size_mb > 2.0) and (len(snyk_findings) > 0)
+        
+        # Determine Mode (Default to hybrid if not specified
         scan_mode = request.POST.get('mode', 'hybrid') 
-        # Note: Frontend must pass this in the loop
         
-        result = dispatcher.scan_file(str(abs_path), mode=scan_mode)
-        
+        if not skip_local:
+             # Run Local Pipeline
+             result = dispatcher.scan_file(str(abs_path), mode=scan_mode)
+             local_findings = result.get('findings', [])
+             
+             # Merge findings (Snyk first)
+             all_findings = snyk_findings + local_findings
+             
+             # Update result dict to include merged findings
+             result['findings'] = all_findings
+        else:
+             # Snyk Only (Large File Optimization)
+             result = {
+                 'status': 'VULNERABLE' if snyk_findings else 'SAFE',
+                 'risk_score': 50 if snyk_findings else 0, # Rough estimate
+                 'findings': snyk_findings
+             }
+
         # Update Result
         next_file.status = 'COMPLETED' if result.get('status') != 'ERROR' else 'ERROR'
         next_file.risk_score = result.get('risk_score', 0)
