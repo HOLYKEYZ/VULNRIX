@@ -26,7 +26,8 @@ def register(request):
             if authenticated_user is not None:
                 login(request, authenticated_user)
                 messages.success(request, f'Welcome to VULNRIX, {username}!')
-                return redirect('scanner:dashboard')
+                # New User -> Docs
+                return redirect('docs')
             else:
                 messages.error(request, 'Account created, but automatic login failed. Please log in manually.')
     else:
@@ -49,7 +50,15 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f'Welcome back, {user.username}!')
-                return redirect('scanner:dashboard')
+                
+                # Smart Redirect:
+                # If user has Scans -> Dashboard (Code Scanner)
+                # If user is New (0 Scans) -> Docs (Tutorial)
+                from scanner.models import ScanHistory
+                if ScanHistory.objects.filter(user=user).exists():
+                    return redirect('scanner:dashboard')
+                else:
+                    return redirect('docs')
             else:
                 messages.error(request, 'Invalid username/email or password.')
     else:

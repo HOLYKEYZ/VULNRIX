@@ -30,13 +30,19 @@ class DarkWebScanner:
         self.leakinsight_key = getattr(Config, 'LEAKINSIGHT_API_KEY', None) or os.getenv('LEAKINSIGHT_API_KEY')
         self.leak_lookup_key = getattr(Config, 'LEAK_LOOKUP_API_KEY', None) or os.getenv('LEAK_LOOKUP_API_KEY')
     
-    def scan(self, email: Optional[str] = None, phone: Optional[str] = None) -> Dict:
+    def scan(self, email: Optional[str] = None, phone: Optional[str] = None,
+             name: Optional[str] = None, username: Optional[str] = None,
+             domain: Optional[str] = None, ip: Optional[str] = None) -> Dict:
         """
         Scan dark web for exposed data using multiple sources.
         
         Args:
             email: Email to check
             phone: Phone number to check
+            name: Full name to check
+            username: Username to check
+            domain: Domain to check
+            ip: IP address to check
         
         Returns:
             Dictionary with dark web exposure results
@@ -52,7 +58,6 @@ class DarkWebScanner:
         }
         
         if email:
-            
             # Check IntelX for dark web mentions
             intelx_results = self._check_intelx(email)
             if intelx_results:
@@ -72,10 +77,29 @@ class DarkWebScanner:
                 results['sources_checked'].append('leak_lookup')
         
         if phone:
-            # Check IntelX for phone
             phone_results = self._check_intelx(phone, selector_type='phonenumber')
             if phone_results:
                 results['dark_web_mentions'].extend(phone_results)
+        
+        if name:
+            name_results = self._check_intelx(f'"{name}"', selector_type='name')
+            if name_results:
+                results['dark_web_mentions'].extend(name_results)
+
+        if username:
+            user_results = self._check_intelx(username, selector_type='username')
+            if user_results:
+                results['dark_web_mentions'].extend(user_results)
+
+        if domain:
+            domain_results = self._check_intelx(domain, selector_type='domain')
+            if domain_results:
+                results['dark_web_mentions'].extend(domain_results)
+
+        if ip:
+            ip_results = self._check_intelx(ip, selector_type='ip')
+            if ip_results:
+                results['dark_web_mentions'].extend(ip_results)
         
         # Calculate exposure score
         results['exposure_score'] = self._calculate_exposure_score(results)
@@ -83,8 +107,12 @@ class DarkWebScanner:
         # Generate recommendations
         results['recommendations'] = self._generate_recommendations(results, email, phone)
         
-        if not results['sources_checked']:
-            results['note'] = 'No API keys configured. Configure IntelX, LeakInsight, or LeakLookup API keys for dark web scanning.'
+        if not results['sources_checked'] and not results['dark_web_mentions']:
+             # If we tried to scan but keys were missing or no hits (and we relied only on intelx for non-email)
+             if not self.intelx_api_key and (name or username or domain or ip):
+                 results['note'] = 'IntelX API key missing. Cannot scan Names/IPs/Domains/Usernames on Dark Web.'
+             elif not self.intelx_api_key and not self.leakinsight_key and not self.leak_lookup_key:
+                results['note'] = 'No API keys configured. Configure IntelX, LeakInsight, or LeakLookup API keys.'
         
         return results
     

@@ -24,9 +24,11 @@ class IntelXService:
         Initialize IntelX service.
         
         Args:
-            api_key: IntelX API key (defaults to INTELX_API_KEY from config)
+            api_key: IntelX API key (defaults to INTELX2_API_KEY or INTELX_API_KEY from config)
         """
-        self.api_key = api_key or Config.INTELX_API_KEY
+        # Prioritize INTELX2_API_KEY, then INTELX_API_KEY
+        self.api_key = api_key or getattr(Config, 'INTELX2_API_KEY', None) or os.getenv('INTELX2_API_KEY') or getattr(Config, 'INTELX_API_KEY', None) or os.getenv('INTELX_API_KEY')
+        
         self.base_url = "https://2.intelx.io/intelligent/search"
         self.headers = {
             "x-key": self.api_key,
@@ -78,8 +80,8 @@ class IntelXService:
                 data = response.json()
                 return {
                     'success': True,
-                    'results': data.get('selectors', []),
-                    'total': len(data.get('selectors', [])),
+                    'results': data.get('selectors', []) or data.get('records', []),
+                    'total': len(data.get('selectors', []) or data.get('records', [])),
                     'raw': data
                 }
             elif response.status_code == 401:
@@ -115,112 +117,58 @@ class IntelXService:
             }
     
     def search_email(self, email: str, max_results: int = 20) -> Dict:
-        """
-        Search for email address.
-        
-        Args:
-            email: Email address to search
-            max_results: Maximum results
-            
-        Returns:
-            Dictionary with search results
-        """
+        """Search for email address."""
         if not email or '@' not in email:
-            return {
-                'success': False,
-                'error': 'Invalid email address',
-                'results': []
-            }
-        
+            return {'success': False, 'error': 'Invalid email address', 'results': []}
         return self.search(email, max_results)
     
     def search_username(self, username: str, max_results: int = 20) -> Dict:
-        """
-        Search for username.
-        
-        Args:
-            username: Username to search
-            max_results: Maximum results
-            
-        Returns:
-            Dictionary with search results
-        """
+        """Search for username."""
         if not username or not username.strip():
-            return {
-                'success': False,
-                'error': 'Invalid username',
-                'results': []
-            }
-        
+            return {'success': False, 'error': 'Invalid username', 'results': []}
         return self.search(username, max_results)
     
     def search_phone(self, phone: str, max_results: int = 20) -> Dict:
-        """
-        Search for phone number.
-        
-        Args:
-            phone: Phone number to search
-            max_results: Maximum results
-            
-        Returns:
-            Dictionary with search results
-        """
+        """Search for phone number."""
         if not phone or not phone.strip():
-            return {
-                'success': False,
-                'error': 'Invalid phone number',
-                'results': []
-            }
-        
-        # Normalize phone number (remove common separators)
+            return {'success': False, 'error': 'Invalid phone number', 'results': []}
+        # Normalize: remove separators
         normalized = phone.strip().replace('-', '').replace(' ', '').replace('(', '').replace(')', '').replace('+', '')
-        
         return self.search(normalized, max_results)
     
     def search_domain(self, domain: str, max_results: int = 20) -> Dict:
-        """
-        Search for domain.
-        
-        Args:
-            domain: Domain to search
-            max_results: Maximum results
-            
-        Returns:
-            Dictionary with search results
-        """
+        """Search for domain."""
         if not domain or not domain.strip():
-            return {
-                'success': False,
-                'error': 'Invalid domain',
-                'results': []
-            }
-        
-        # Remove protocol if present
+            return {'success': False, 'error': 'Invalid domain', 'results': []}
+        # Remove protocol/path
         domain = domain.strip()
         if domain.startswith('http://') or domain.startswith('https://'):
             domain = domain.split('//', 1)[1]
         if '/' in domain:
             domain = domain.split('/')[0]
-        
         return self.search(domain, max_results)
     
     def search_name(self, name: str, max_results: int = 20) -> Dict:
-        """
-        Search for full name.
-        
-        Args:
-            name: Full name to search
-            max_results: Maximum results
-            
-        Returns:
-            Dictionary with search results
-        """
+        """Search for full name."""
         if not name or not name.strip():
-            return {
-                'success': False,
-                'error': 'Invalid name',
-                'results': []
-            }
-        
+            return {'success': False, 'error': 'Invalid name', 'results': []}
         return self.search(f'"{name}"', max_results)
+
+    def search_btc(self, btc_address: str, max_results: int = 20) -> Dict:
+        """Search for Bitcoin address."""
+        if not btc_address or not btc_address.strip():
+            return {'success': False, 'error': 'Invalid BTC address', 'results': []}
+        return self.search(btc_address.strip(), max_results)
+
+    def search_ipfs(self, ipfs_hash: str, max_results: int = 20) -> Dict:
+        """Search for IPFS hash."""
+        if not ipfs_hash or not ipfs_hash.strip():
+            return {'success': False, 'error': 'Invalid IPFS hash', 'results': []}
+        return self.search(ipfs_hash.strip(), max_results)
+
+    def search_cidr(self, cidr: str, max_results: int = 20) -> Dict:
+        """Search for CIDR block or IP."""
+        if not cidr or not cidr.strip():
+            return {'success': False, 'error': 'Invalid CIDR/IP', 'results': []}
+        return self.search(cidr.strip(), max_results)
 

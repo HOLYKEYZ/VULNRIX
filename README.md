@@ -15,12 +15,12 @@
 - **AI Malicious Detection** – Detects Code-generated malware patterns
 
 ### 🔍 Digital Footprint Scanner
-- **Email** – Breach checking, 
-- **Dark Web** mentions , monitoring
-- **Phone** – Carrier lookup, validation
-- **Domain/IP** – WHOIS, DNS, port scanning
-- **Username/name** – Social media and webseach enumeration
-- **Quick Lookup** – Scan single items fast
+- **Email** – Breach checking, Dark Web monitoring
+- **Dark Web** – Mentions for Names, Usernames, Domains, and IPs
+- **Phone** – Carrier lookup, validation, global coverage
+- **Domain/IP** – WHOIS, DNS, port scanning, CIDR analysis
+- **De-fi/Crypto** – Bitcoin Address and IPFS Hash scanning
+- **Quick Lookup** – Intelligent detection for all types
 
 ---
 
@@ -48,7 +48,8 @@ python manage.py runserver
 
 ```env
 # Core (Pick the ones you have)
-INTELX_API_KEY=          # Primary OSINT
+INTELX2_API_KEY=         # Primary OSINT (Darkweb, BTC, IPFS)
+INTELX_API_KEY=          # Fallback
 VIRUS_TOTAL_API_KEY=     # Malware scanning
 LEAKINSIGHT_API_KEY=     # Breach checking
 GROQ_KEY=                # AI scanning
