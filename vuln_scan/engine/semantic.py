@@ -153,19 +153,21 @@ class SemanticAnalyzer:
             ],
             
             # CSRF Issues
-            "Missing CSRF Protection": [
-                r"@app\.route\s*\([^)]+,\s*methods\s*=\s*\[[^\]]*'POST'[^\]]*\]\)(?!.*csrf)",
-                r"form.*method=['\"]post['\"](?!.*csrf)",
-                r"axios\.post\s*\([^)]+\)(?!.*csrf)",
-            ],
+            # CSRF Issues - (Removed for excessive false positives, handled by Snyk)
+            # "Missing CSRF Protection": [
+            #    r"@app\.route\s*\([^)]+,\s*methods\s*=\s*\[[^\]]*'POST'[^\]]*\]\)(?!.*csrf)",
+            #    r"form.*method=['\"]post['\"](?!.*csrf)",
+            #    r"axios\.post\s*\([^)]+\)(?!.*csrf)",
+            # ],
             
             # Authentication Issues  
-            "Hardcoded Credentials": [
-                r"password\s*=\s*['\"][^'\"]+['\"]",
-                r"secret\s*=\s*['\"][^'\"]{8,}['\"]",
-                r"api_key\s*=\s*['\"][^'\"]+['\"]",
-                r"token\s*=\s*['\"][A-Za-z0-9+/=]{20,}['\"]",
-            ],
+            # Authentication Issues - (Removed to favor Snyk's secret scanning)
+            # "Hardcoded Credentials": [
+            #     r"password\s*=\s*['\"][^'\"]+['\"]",
+            #     r"secret\s*=\s*['\"][^'\"]{8,}['\"]",
+            #     r"api_key\s*=\s*['\"][^'\"]+['\"]",
+            #     r"token\s*=\s*['\"][A-Za-z0-9+/=]{20,}['\"]",
+            # ],
             "Weak Password Hashing": [
                 r"md5\s*\(",
                 r"sha1\s*\(",
@@ -176,16 +178,17 @@ class SemanticAnalyzer:
             ],
             
             # Business Logic Issues
-            "Mass Assignment": [
-                r"\.update\s*\(\s*request\.(POST|GET|data)",  # Django/Python
-                r"Object\.assign\s*\([^,]+,\s*req\.body",  # Node.js
-                r"model\.fill\s*\(\$request->all\(\)",  # Laravel
-            ],
-            "Timing Attack Risk": [
-                r"if\s+password\s*==\s*",  # Direct string comparison
-                r"if\s+token\s*===?\s*",
-                r"if\s+secret\s*==\s*",
-            ],
+            # Business Logic Issues - (Too context dependent for regex)
+            # "Mass Assignment": [
+            #     r"\.update\s*\(\s*request\.(POST|GET|data)",  # Django/Python
+            #     r"Object\.assign\s*\([^,]+,\s*req\.body",  # Node.js
+            #     r"model\.fill\s*\(\$request->all\(\)",  # Laravel
+            # ],
+            # "Timing Attack Risk": [
+            #     r"if\s+password\s*==\s*",  # Direct string comparison
+            #     r"if\s+token\s*===?\s*",
+            #     r"if\s+secret\s*==\s*",
+            # ],
             
             # Deprecated/Unsafe Functions
             "Deprecated Function (gets)": [r"\bgets\s*\("],
