@@ -750,12 +750,20 @@ def scan_next_file(request, project_id):
             logger.warning(f"Snyk loop error: {snyk_err}")
 
         # Determine Scan Strategy
-        # If file is HUGE (>2MB) and we have Snyk results, skip local to save time/memory
-        skip_local = (file_size_mb > 2.0) and (len(snyk_findings) > 0)
+        scan_mode = request.POST.get('mode', 'hybrid')
         
-        # Determine Mode (Default to hybrid if not specified
-        scan_mode = request.POST.get('mode', 'hybrid') 
+        # CRITICAL: For large repos (>50 files), if Snyk is active, SKIP local scan entirely.
+        # This prevents "False Positive Storms" from the regex engine crashing the server.
+        is_large_repo = project.total_files > 50
+        skip_local = False
         
+        if snyk_findings and is_large_repo:
+             skip_local = True
+        
+        # Also skip if file is huge (>2MB) to prevent memory crashes
+        if file_size_mb > 2.0:
+             skip_local = True
+
         if not skip_local:
              # Run Local Pipeline
              result = dispatcher.scan_file(str(abs_path), mode=scan_mode)
@@ -767,7 +775,7 @@ def scan_next_file(request, project_id):
              # Update result dict to include merged findings
              result['findings'] = all_findings
         else:
-             # Snyk Only (Large File Optimization)
+             # Snyk Only Optimization
              result = {
                  'status': 'VULNERABLE' if snyk_findings else 'SAFE',
                  'risk_score': 50 if snyk_findings else 0, # Rough estimate

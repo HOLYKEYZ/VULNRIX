@@ -111,7 +111,7 @@ class SemanticAnalyzer:
             
             # Input Validation Bugs
             "Missing Input Validation": [r"scanf\s*\([^)]+\);[^}]*\w+\[", r"gets\s*\("],
-            "Array Index Out of Bounds": [r"\[\s*\w+\s*\](?!.*if.*<.*sizeof)"],
+            # "Array Index Out of Bounds": [r"\[\s*\w+\s*\](?!.*if.*<.*sizeof)"],  # Too noisy for Python/JS
             
             # Insecure Deserialization
             "Insecure Deserialization (pickle)": [
@@ -248,7 +248,7 @@ class SemanticAnalyzer:
                 "OS Command Injection": r"os\.system\s*\(|subprocess\.call\s*\(|subprocess\.run\s*\(|subprocess\.Popen\s*\(|os\.popen\s*\(|commands\.getstatusoutput\s*\(",
                 "Shell Injection": r"shell\s*=\s*True",
                 "SQL Injection": r"cursor\.execute\s*\(.*%|\.execute\s*\(.*\+|text\s*\(.*['\"]\%.*['\"]",
-                "Path Traversal": r"open\s*\(.*\+|os\.path\.join\s*\(.*\+|file\s*\(",
+                "Path Traversal": r"open\s*\([^\)]*request\.[^\)]+\)|file\s*\([^\)]*request\.[^\)]+\)", # Only flag if request data is involved,
                 "Pickle Deserialization": r"pickle\.loads?\s*\(|cPickle\.loads?\s*\(",
                 "YAML Unsafe Load": r"yaml\.load\s*\([^,)]*\)(?!.*Loader)",
                 "Jinja2 SSTI": r"render_template_string\s*\(|environment\.from_string",
