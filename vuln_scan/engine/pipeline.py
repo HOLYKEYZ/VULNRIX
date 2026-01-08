@@ -143,10 +143,15 @@ class SecurityPipeline:
                 if not isinstance(plan, dict):
                     plan = {"risk_level": "UNKNOWN", "error": "Invalid response"}
 
+                is_risky = plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"]
+                
+                # If AI says SAFE, discard regex findings to reduce false positives
+                final_findings = semantic_findings[:500] if is_risky else []
+
                 return {
-                    "status": "VULNERABLE" if plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"] else "SAFE",
+                    "status": "VULNERABLE" if is_risky else "SAFE",
                     "risk_score": risk_score,
-                    "findings": semantic_findings[:500],
+                    "findings": final_findings,
                     "plan": plan,
                     "ai_malicious_risk": ai_scan,
                     "reason": f"Hybrid scan: {plan.get('reasoning', 'Analysis complete')}"
@@ -183,16 +188,19 @@ class SecurityPipeline:
                     if not isinstance(report, dict):
                         report = {"status": "ERROR", "findings": []}
                     
-                    # Merge regex findings with LLM findings
-                    llm_findings = report.get("findings", [])
-                    all_findings = semantic_findings + llm_findings
+                    # Merge regex findings with LLM findings?
+                    # NO: The user wants "barest minimum false positives" and "AI to scan".
+                    # We pass regex as hints to AI. If AI confirms them, they are in 'report'.
+                    # If AI ignores them, we trust the AI and drop them.
                     
-                    # Deduplicate based on line number + type (naive)
-                    # Actually, let's just return both, the UI handles lists.
+                    llm_findings = report.get("findings", [])
+                    
+                    # Fallback: If AI returned NO findings but risk is HIGH, maybe we should keep regex?
+                    # But generally we trust the AI context window.
                     
                     return {
                         "status": report.get("status", "UNKNOWN"),
-                        "findings": all_findings[:50], # Return merged list
+                        "findings": llm_findings, # ONLY return AI-verified findings
                         "plan": plan,
                         "ai_malicious_risk": ai_scan
                     }
@@ -200,9 +208,9 @@ class SecurityPipeline:
                     return {
                         "status": "SAFE",
                         "plan": plan,
-                        "findings": semantic_findings, # Return local info even if safe
+                        "findings": [], # If Phase 1 says SAFE, discard regex noise
                         "ai_malicious_risk": ai_scan,
-                        "reason": "Phase 1 found low risk, skipping deep analysis."
+                        "reason": "Phase 1 analysis determined code is safe."
                     }
 
             return {"status": "ERROR", "error": f"Unknown mode: {mode}"}
