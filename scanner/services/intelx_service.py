@@ -1,6 +1,7 @@
 """
 IntelX API service for OSINT scanning.
 """
+import os
 import requests
 from typing import Dict, List, Optional
 

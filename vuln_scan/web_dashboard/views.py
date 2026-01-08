@@ -653,7 +653,7 @@ def start_repo_scan(request):
         }
         
         if has_snyk and (project.total_files > 50):
-            response_data['warning'] = "Large repository detected (>50 files). Deep analysis enabled - this may take longer."
+            response_data['warning'] = "Heads up! This is a larger repository (50+ files). We've enabled deep analysis mode for thorough scanning. Please allow a few extra moments for completion."
             response_data['snyk_enabled'] = True
             
         return JsonResponse(response_data)
