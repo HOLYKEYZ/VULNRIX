@@ -398,8 +398,8 @@ async function startRepoScan() {
         
         // Check for Large Repo Warning (Snyk Fallback)
         if(initData.warning) {
-             alert(initData.warning);
-             log(`NOTICE: ${initData.warning}`, 'warn');
+             // alert(initData.warning); // Removed blocking alert
+             log(`NOTICE: ${initData.warning} (Snyk Enabled)`, 'snyk');
         }
 
         const projectId = initData.project_id;
