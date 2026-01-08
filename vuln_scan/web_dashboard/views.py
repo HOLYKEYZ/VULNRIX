@@ -754,10 +754,12 @@ def scan_next_file(request, project_id):
         
         # CRITICAL: For large repos (>50 files), if Snyk is active, SKIP local scan entirely.
         # This prevents "False Positive Storms" from the regex engine crashing the server.
+        # We trust Snyk's result (even if empty/safe).
         is_large_repo = project.total_files > 50
         skip_local = False
         
-        if snyk_findings and is_large_repo:
+        # If Snyk ran successfully (snyk_result is not None), verify it's a large repo
+        if is_large_repo and snyk_result is not None:
              skip_local = True
         
         # Also skip if file is huge (>2MB) to prevent memory crashes
