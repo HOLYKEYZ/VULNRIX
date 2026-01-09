@@ -741,11 +741,20 @@ def scan_next_file(request, project_id):
                 }
                 language = lang_map.get(ext, 'python')
                 
-                # Run Snyk
-                snyk_result = snyk.analyze_code(code_content, language, next_file.filename)
-                snyk_findings = snyk_result.get('findings', [])
-                for f in snyk_findings:
-                    f['source'] = 'snyk'
+                # Run Snyk (SCA vs SAST)
+                manifests = ['package.json', 'package-lock.json', 'requirements.txt', 'gemfile', 'gemfile.lock', 'go.mod', 'pom.xml', 'yarn.lock']
+                if next_file.filename.lower() in manifests:
+                     # SCA Scan
+                     snyk_result = snyk.analyze_dependencies(code_content, next_file.filename)
+                     snyk_findings = snyk_result.get('findings', [])
+                     for f in snyk_findings:
+                         f['source'] = 'snyk_sca'
+                else:
+                     # SAST Code Scan
+                     snyk_result = snyk.analyze_code(code_content, language, next_file.filename)
+                     snyk_findings = snyk_result.get('findings', [])
+                     for f in snyk_findings:
+                         f['source'] = 'snyk_code'
         except Exception as snyk_err:
             logger.warning(f"Snyk loop error: {snyk_err}")
 
