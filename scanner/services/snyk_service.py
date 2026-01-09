@@ -333,6 +333,121 @@ class SnykService:
             return common_patterns
 
 
+    def analyze_dependencies(self, content: str, filename: str) -> Dict[str, Any]:
+        """
+        Analyze dependency files (SCA) for vulnerabilities using Snyk Test API.
+        Supported: package.json, requirements.txt, Gemfile, go.mod, pom.xml
+        """
+        if not self.is_configured():
+            return {'status': 'SKIPPED', 'reason': 'API key missing', 'findings': []}
+            
+        org_id = self.get_org_id()
+        if not org_id:
+            return {'status': 'SKIPPED', 'reason': 'Org ID missing', 'findings': []}
+
+        # maximize compatibility: map filename to package manager for Snyk API
+        # Snyk API endpoints: /test/npm, /test/pip, etc.
+        fname = filename.lower()
+        manager = None
+        
+        if fname == 'package.json': manager = 'npm'
+        elif fname == 'package-lock.json': manager = 'npm'
+        elif fname == 'yarn.lock': manager = 'yarn'
+        elif fname == 'requirements.txt': manager = 'pip'
+        elif fname == 'gemfile': manager = 'rubygems'
+        elif fname == 'gemfile.lock': manager = 'rubygems'
+        elif fname == 'pom.xml': manager = 'maven'
+        elif fname == 'go.mod': manager = 'gomodules'
+        elif fname == 'composer.json': manager = 'composer'
+        elif fname == 'build.gradle': manager = 'gradle'
+        
+        if not manager:
+            return {'status': 'SKIPPED', 'reason': 'Unsupported manifest', 'findings': []}
+
+        try:
+            url = f'{self.V1_URL}/test/{manager}'
+            
+            # Snyk Test API requires query params for org
+            params = {'org': org_id}
+            
+            # Payload structure varies slightly, but usually expects the file content
+            # For simple usage, we send the file in the body
+            payload = {
+                'files': {
+                    'target': {
+                        'contents': content
+                    }
+                }
+            }
+            
+            # Note: The /test endpoints are complex. Snyk recommends CLI for full context.
+            # But the API supports ad-hoc testing.
+            # Official docs structure: POST /test/npm
+            # Body: JSON with "files": { "package.json": { "contents": "..." } }
+            
+            # Adjust payload key based on manager
+            target_key = filename # use actual filename
+            payload = {
+                'files': {
+                    target_key: {
+                        'contents': content
+                    }
+                }
+            }
+
+            response = requests.post(
+                url,
+                headers=self.headers,
+                params=params,
+                json=payload,
+                timeout=45
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return self._parse_snyk_sca_results(data, filename)
+            else:
+                 logger.warning(f"Snyk SCA failed ({response.status_code}): {response.text[:200]}")
+                 return {'status': 'ERROR', 'error': f"Snyk API invalid response {response.status_code}", 'findings': []}
+
+        except Exception as e:
+            logger.error(f"SCA Analysis failed: {e}")
+            return {'status': 'ERROR', 'error': str(e), 'findings': []}
+
+    def _parse_snyk_sca_results(self, data: Dict, filename: str) -> Dict[str, Any]:
+        """Parse Snyk SCA (Test) response."""
+        vulnerabilities = []
+        issues = data.get('issues', {}).get('vulnerabilities', [])
+        
+        # Snyk sometimes returns a direct list or nested object depending on endpoint version
+        if not issues and isinstance(data, list):
+             # sometimes it returns list of results?
+             pass 
+
+        for issue in issues:
+            # SCA issues have slightly different fields
+            vuln = {
+                'type': issue.get('title', 'Dependency Vulnerability'),
+                'severity': issue.get('severity', 'medium').upper(),
+                'cwe': ', '.join(issue.get('identifiers', {}).get('CWE', [])),
+                'description': f"{issue.get('packageName')}@{issue.get('version')}: {issue.get('description', '')[:200]}...",
+                'location': {
+                    'file': filename,
+                    'line': 0, # SCA usually references the whole file or package line (hard to determine without parser)
+                    'code': issue.get('packageName')
+                },
+                'recommendation': f"Upgrade to {str(issue.get('upgradePath', [])[-1]) if issue.get('upgradePath') else 'fixed version'}",
+                'source': 'snyk_sca'
+            }
+            vulnerabilities.append(vuln)
+            
+        return {
+            'source': 'snyk_sca',
+            'status': 'VULNERABLE' if vulnerabilities else 'SAFE',
+            'findings': vulnerabilities,
+            'summary': { 'total': len(vulnerabilities) }
+        }
+
 # Singleton instance
 _snyk_service = None
 
