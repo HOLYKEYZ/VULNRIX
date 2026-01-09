@@ -357,6 +357,8 @@ async function startFileScan(file) {
 // --- REPO SCAN LOGIC (LIVE TERMINAL) ---
 async function startRepoScan() {
     const url = document.getElementById('repoUrl').value;
+    let speedWarned = false; // Fix: Declare variable in scope
+    
     if(!url) {
         log("Error: Please enter a valid Git URL", 'error');
         return;
@@ -399,7 +401,7 @@ async function startRepoScan() {
         // Check for Large Repo Warning (Snyk Fallback)
         if(initData.warning) {
              // alert(initData.warning); // Removed blocking alert
-             log(`NOTICE: ${initData.warning} (Snyk Enabled)`, 'snyk');
+             log(`NOTICE: ${initData.warning}`, 'snyk');
         }
 
         const projectId = initData.project_id;
@@ -448,6 +450,12 @@ async function startRepoScan() {
                 const fname = scanData.filename;
                 const findings = scanData.findings || [];
                 issuesCount += findings.length;
+                
+                // Warn about speed for AI modes (ONCE)
+                if (!speedWarned && (currentMode === 'hybrid' || currentMode === 'deep')) {
+                    log(`NOTE: ${currentMode.toUpperCase()} Mode enabled. Analysis may be slower due to AI API latency & rate-limiting.`, 'warning');
+                    speedWarned = true; // Prevent spam
+                }
                 
                 // Log the file action
                 log(`[${processed}/${totalFiles}] Analyzing ${fname}...`, 'info');

@@ -153,21 +153,19 @@ class SemanticAnalyzer:
             ],
             
             # CSRF Issues
-            # CSRF Issues - (Removed for excessive false positives, handled by Snyk)
-            # "Missing CSRF Protection": [
-            #    r"@app\.route\s*\([^)]+,\s*methods\s*=\s*\[[^\]]*'POST'[^\]]*\]\)(?!.*csrf)",
-            #    r"form.*method=['\"]post['\"](?!.*csrf)",
-            #    r"axios\.post\s*\([^)]+\)(?!.*csrf)",
-            # ],
+            "Missing CSRF Protection": [
+               r"@app\.route\s*\([^)]+,\s*methods\s*=\s*\[[^\]]*'POST'[^\]]*\]\)(?!.*csrf)",
+               r"form.*method=['\"]post['\"](?!.*csrf)",
+               r"axios\.post\s*\([^)]+\)(?!.*csrf)",
+            ],
             
             # Authentication Issues  
-            # Authentication Issues - (Removed to favor Snyk's secret scanning)
-            # "Hardcoded Credentials": [
-            #     r"password\s*=\s*['\"][^'\"]+['\"]",
-            #     r"secret\s*=\s*['\"][^'\"]{8,}['\"]",
-            #     r"api_key\s*=\s*['\"][^'\"]+['\"]",
-            #     r"token\s*=\s*['\"][A-Za-z0-9+/=]{20,}['\"]",
-            # ],
+            "Hardcoded Credentials": [
+                r"password\s*=\s*['\"][^'\"]+['\"]",
+                r"secret\s*=\s*['\"][^'\"]{8,}['\"]",
+                r"api_key\s*=\s*['\"][^'\"]+['\"]",
+                r"token\s*=\s*['\"][A-Za-z0-9+/=]{20,}['\"]",
+            ],
             "Weak Password Hashing": [
                 r"md5\s*\(",
                 r"sha1\s*\(",

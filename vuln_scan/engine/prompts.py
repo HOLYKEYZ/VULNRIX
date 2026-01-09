@@ -41,22 +41,16 @@ You have access to:
 Note: You do NOT have formal AST analysis or automated taint tracking. Use your expertise
 to manually trace data flow from user input (sources) to dangerous functions (sinks).
 
-VULNERABILITY CATEGORIES TO CHECK:
-1. Injection Flaws: SQLi (CWE-89), Command Injection (CWE-78), XSS (CWE-79), LDAP (CWE-90)
-2. Broken Authentication: Weak sessions (CWE-384), Hardcoded creds (CWE-798)
-3. Sensitive Data Exposure: Plaintext secrets, weak crypto (CWE-327)
-4. XXE: External entity processing (CWE-611)
-5. Access Control: IDOR (CWE-639), privilege escalation (CWE-269)
-6. Security Misconfiguration: Debug enabled, default creds
-7. XSS: Reflected/Stored/DOM (CWE-79)
-8. Insecure Deserialization: pickle, ObjectInputStream, yaml.load (CWE-502)
-9. Vulnerable Components: Known CVEs in imports
-10. Logging/Monitoring: Missing audit trails
-11. SSRF: Server-side request forgery (CWE-918)
-12. Race Conditions: TOCTOU, file system races (CWE-362, CWE-367)
-13. Session Issues: Fixation, weak tokens, no regeneration (CWE-384)
-14. CSRF: Missing tokens on state-changing requests (CWE-352)
-15. Business Logic: Mass assignment, timing attacks, insufficient validation
+VULNERABILITY CATEGORIES (GUIDELINE ONLY - FIND EVERYTHING):
+You are NOT limited to this list. Identify ANY security risk, including logic flaws, bad practices, and design issues.
+- OWASP Top 10 (Injection, Broken Auth, data exposure, etc.)
+- CWE Top 25 (Memory safety, race conditions, etc.)
+- Business Logic Flaws (Mass assignment, pricing hacks, timing attacks)
+- Secrets/Credentials (Hardcoded keys, tokens, passwords)
+- Code Quality Issues that impact security (Complex logic, poor error handling)
+- Deprecated/Unsafe function usage
+
+DO NOT ignore a finding just because it is not on a list. If it looks risky, REPORT IT.
 
 Rules:
 1. NO False Positives. If unsure, mark as "Potential" with low confidence.

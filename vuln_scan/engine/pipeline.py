@@ -46,21 +46,43 @@ class SecurityPipeline:
         """Get fast provider for Phase 1 (Groq preferred)"""
         if not HAS_PROVIDERS: return None
         
-        if os.getenv("GROQ_KEY"):
-            return GroqProvider()
-        elif os.getenv("OPENAI_API_KEY"):
+        # Load Balancing: Support multiple keys for high throughput
+        import random
+        
+        # Groq Keys
+        groq_keys = [k for k in [os.getenv("GROQ_KEY"), os.getenv("GROQ2_API_KEY")] if k]
+        if groq_keys:
+            selected_key = random.choice(groq_keys)
+            self.logger.info(f"Using Groq Key (one of {len(groq_keys)})")
+            return GroqProvider(api_key=selected_key)
+
+        # OpenAI
+        if os.getenv("OPENAI_API_KEY"):
             return OpenAIProvider(model="gpt-3.5-turbo")
-        elif os.getenv("GEMINI_API_KEY"):
-            return GeminiProvider(model="gemini-1.5-flash")
+
+        # Gemini Keys
+        gemini_keys = [k for k in [os.getenv("GEMINI_API_KEY"), os.getenv("GEMINI2_API_KEY")] if k]
+        if gemini_keys:
+            selected_key = random.choice(gemini_keys)
+            self.logger.info(f"Using Gemini Key (one of {len(gemini_keys)})")
+            return GeminiProvider(api_key=selected_key, model="gemini-1.5-flash")
+            
         return None
 
     def _get_phase2_provider(self):
         """Get strong provider for Phase 2 (Gemini/Claude/GPT-4)"""
         if not HAS_PROVIDERS: return None
         
-        if os.getenv("GEMINI_API_KEY"):
-            return GeminiProvider(model="gemini-1.5-pro")
-        elif os.getenv("ANTHROPIC_API_KEY"):
+        import random
+        
+        # Gemini Keys (Pro model)
+        gemini_keys = [k for k in [os.getenv("GEMINI_API_KEY"), os.getenv("GEMINI2_API_KEY")] if k]
+        if gemini_keys:
+            selected_key = random.choice(gemini_keys)
+            self.logger.info(f"Using Gemini Key for Phase 2 (one of {len(gemini_keys)})")
+            return GeminiProvider(api_key=selected_key, model="gemini-1.5-pro")
+
+        if os.getenv("ANTHROPIC_API_KEY"):
             return ClaudeProvider()
         elif os.getenv("OPENAI_API_KEY"):
             return OpenAIProvider(model="gpt-4")
@@ -136,20 +158,43 @@ class SecurityPipeline:
                     }
 
                 self.logger.info("Running lightweight LLM analysis...")
+                
+                # INTELLIGENT HINT SELECTION
+                # Sort findings to prioritize High Severity ones for the LLM Context
+                def get_severity_weight(f):
+                    t = f.get('type', '').lower()
+                    if 'credential' in t or 'secret' in t or 'key' in t: return 3
+                    if 'sql' in t or 'command' in t or 'remote' in t or 'exec' in t: return 3
+                    if 'xss' in t or 'csrf' in t: return 2
+                    return 1
+                
+                semantic_findings.sort(key=get_severity_weight, reverse=True)
+                
+                # Generate Summary of all findings
+                from collections import Counter
+                finding_counts = Counter([f.get('type', 'Unknown') for f in semantic_findings])
+                finding_summary = ", ".join([f"{k}: {v}" for k, v in finding_counts.items()])
+
                 # Truncate code for LLM to save tokens/memory
                 truncated_code = code[:10000] 
-                plan = self._run_phase1(truncated_code, structure, categories, semantic_findings[:5])
+                
+                # Pass prioritized findings (Top 15 instead of 5) plus summary
+                plan = self._run_phase1(truncated_code, structure, categories, semantic_findings[:15], finding_summary)
                 
                 if not isinstance(plan, dict):
                     plan = {"risk_level": "UNKNOWN", "error": "Invalid response"}
 
                 is_risky = plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"]
                 
-                # If AI says SAFE, discard regex findings to reduce false positives
-                final_findings = semantic_findings[:500] if is_risky else []
+                # IMPORTANT: If regex found High Severity items (Credentials/RCE), trust them more
+                # even if AI says 'Safe' (AI often marks test data as safe, but users want to see it).
+                has_critical = any(get_severity_weight(f) >= 3 for f in semantic_findings)
+                
+                # If AI says SAFE, discard regex findings UNLESS we have critical regex hits
+                final_findings = semantic_findings[:500] if (is_risky or has_critical) else []
 
                 return {
-                    "status": "VULNERABLE" if is_risky else "SAFE",
+                    "status": "VULNERABLE" if (is_risky or has_critical) else "SAFE",
                     "risk_score": risk_score,
                     "findings": final_findings,
                     "plan": plan,
@@ -167,9 +212,23 @@ class SecurityPipeline:
                     }
 
                 self.logger.info("Phase 1: Planning...")
+                
+                # INTELLIGENT HINT SELECTION (Same as Hybrid)
+                def get_severity_weight(f):
+                    t = f.get('type', '').lower()
+                    if 'credential' in t or 'secret' in t or 'key' in t: return 3
+                    if 'sql' in t or 'command' in t or 'remote' in t or 'exec' in t: return 3
+                    if 'xss' in t or 'csrf' in t: return 2
+                    return 1
+                semantic_findings.sort(key=get_severity_weight, reverse=True)
+                
+                from collections import Counter
+                finding_counts = Counter([f.get('type', 'Unknown') for f in semantic_findings])
+                finding_summary = ", ".join([f"{k}: {v}" for k, v in finding_counts.items()])
+                
                 # Truncate code for LLM to save tokens/memory
                 truncated_code = code[:10000]
-                plan = self._run_phase1(truncated_code, structure, categories, semantic_findings[:10])
+                plan = self._run_phase1(truncated_code, structure, categories, semantic_findings[:15], finding_summary)
                 
                 if not isinstance(plan, dict):
                     plan = {"risk_level": "UNKNOWN"}
@@ -183,7 +242,9 @@ class SecurityPipeline:
                     self.logger.info("Phase 2: Deep Analysis (Triggered by Risk Level or Local Findings)...")
                     if not self.phase2_provider:
                         self.phase2_provider = self.phase1_provider
-                    report = self._run_phase2(code, plan, semantic_findings[:20])
+                    
+                    # Pass top 30 prioritized findings to Phase 2
+                    report = self._run_phase2(code, plan, semantic_findings[:30])
                     
                     if not isinstance(report, dict):
                         report = {"status": "ERROR", "findings": []}
@@ -225,16 +286,16 @@ class SecurityPipeline:
                 "findings": []
             }
 
-    def _run_phase1(self, code: str, structure: Dict, categories: List[str], semantic_findings: List[Dict]) -> Dict:
+    def _run_phase1(self, code: str, structure: Dict, categories: List[str], semantic_findings: List[Dict], finding_summary: str = "") -> Dict:
         """Execute Phase 1: Planning"""
         summary = f"""
         Categories Found: {', '.join(categories)}
         Functions: {len(structure.get('functions', []))}
         Imports: {len(structure.get('imports', []))}
-        Potential Semantic Issues: {len(semantic_findings)}
+        Potential Semantic Issues (Total): {len(semantic_findings)} (Summary: {finding_summary})
         """
         
-        context = f"METADATA:\n{summary}\n\nCODE SUMMARY:\n{code[:8000]}" 
+        context = f"METADATA:\n{summary}\n\nTOP RISK HINTS:\n{json.dumps(semantic_findings)}\n\nCODE SUMMARY:\n{code[:8000]}" 
         
         try:
             response = self.phase1_provider.ask(

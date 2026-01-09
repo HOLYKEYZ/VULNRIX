@@ -448,6 +448,52 @@ class SnykService:
             'summary': { 'total': len(vulnerabilities) }
         }
 
+    def analyze_batch(self, files: List[Dict[str, str]]) -> Dict[str, Any]:
+        """
+        Analyze a batch of files for context-aware vulnerabilities (Snyk Code).
+        Args:
+            files: List of dicts with 'path' and 'content' keys.
+        """
+        if not self.is_configured():
+            return {'status': 'SKIPPED', 'reason': 'API key missing', 'findings': []}
+            
+        org_id = self.get_org_id()
+        if not org_id:
+            return {'status': 'SKIPPED', 'reason': 'Org ID missing', 'findings': []}
+            
+        try:
+            url = f'{self.BASE_URL}/orgs/{org_id}/code/tests'
+            
+            # Construct payload with multiple files
+            # Limit payload size might be needed, but for now we try full batch
+            # files argument is already [{'path': '...', 'content': '...'}]
+            
+            payload = {
+                'data': {
+                    'type': 'code_test',
+                    'attributes': {
+                        'files': files 
+                    }
+                }
+            }
+            
+            response = requests.post(
+                url,
+                headers={**self.headers, 'Content-Type': 'application/vnd.api+json'},
+                json=payload,
+                timeout=120 # Higher timeout for batch
+            )
+            
+            if response.status_code in [200, 201]:
+                return self._parse_snyk_results(response.json())
+            else:
+                 logger.warning(f"Snyk Batch API failed ({response.status_code}): {response.text[:200]}")
+                 return {'status': 'ERROR', 'error': f"Snyk Batch API failed {response.status_code}", 'findings': []}
+
+        except Exception as e:
+            logger.error(f"Batch Analysis failed: {e}")
+            return {'status': 'ERROR', 'error': str(e), 'findings': []}
+
 # Singleton instance
 _snyk_service = None
 
