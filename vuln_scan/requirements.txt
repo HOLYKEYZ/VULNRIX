@@ -5,3 +5,4 @@ python-dotenv==1.0.0
 tree-sitter==0.20.4
 rich==13.7.0
 json_repair==0.54.2
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
