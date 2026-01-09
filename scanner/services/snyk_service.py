@@ -140,6 +140,7 @@ class SnykService:
         vulnerabilities = []
         
         issues = data.get('data', {}).get('attributes', {}).get('issues', [])
+        logger.debug(f"Snyk API returned {len(issues)} raw issues.") # Debug Log
         
         for issue in issues:
             vuln = {
@@ -481,13 +482,56 @@ class SnykService:
                 url,
                 headers={**self.headers, 'Content-Type': 'application/vnd.api+json'},
                 json=payload,
-                timeout=120 # Higher timeout for batch
+                timeout=30 
             )
             
+            logger.info(f"Snyk Batch Init Status: {response.status_code}")
+            
             if response.status_code in [200, 201]:
-                return self._parse_snyk_results(response.json())
+                # Handles both Sync (rare) and Async (common)
+                # Check if we need to poll
+                resp_data = response.json()
+                data_attr = resp_data.get('data', {}).get('attributes', {})
+                status = data_attr.get('status')
+                
+                if status in ['queued', 'in_progress']:
+                    # ASYNC FLOW: Poll for results
+                    import time
+                    poll_url = resp_data.get('data', {}).get('links', {}).get('self', {}).get('href')
+                    if not poll_url:
+                        # Fallback: construct from ID
+                        scan_id = resp_data.get('data', {}).get('id')
+                        poll_url = f"{self.BASE_URL}/orgs/{org_id}/code/tests/{scan_id}"
+                    
+                    if not poll_url.startswith('http'):
+                         poll_url = f"https://api.snyk.io{poll_url}" if poll_url.startswith('/') else poll_url
+
+                    logger.info(f"Polling Snyk Scan: {poll_url}")
+                    
+                    max_retries = 30 # 30 * 2s = 60s max wait
+                    for _ in range(max_retries):
+                        time.sleep(2)
+                        poll_resp = requests.get(poll_url, headers=self.headers, timeout=10)
+                        if poll_resp.status_code == 200:
+                            poll_data = poll_resp.json()
+                            p_status = poll_data.get('data', {}).get('attributes', {}).get('status')
+                            
+                            if p_status == 'finished':
+                                logger.info("Snyk Scan Finished!")
+                                return self._parse_snyk_results(poll_data)
+                            elif p_status == 'failed':
+                                return {'status': 'ERROR', 'error': 'Snyk Scan Failed via Polling', 'findings': []}
+                            # else: continues looping
+                        else:
+                            logger.warning(f"Polling Error: {poll_resp.status_code}")
+                    
+                    return {'status': 'TIMEOUT', 'error': 'Snyk Scan Timed Out', 'findings': []}
+                
+                else:
+                    # Sync or already finished
+                    return self._parse_snyk_results(resp_data)
             else:
-                 logger.warning(f"Snyk Batch API failed ({response.status_code}): {response.text[:200]}")
+                 logger.warning(f"Snyk Batch Init failed ({response.status_code}): {response.text[:500]}")
                  return {'status': 'ERROR', 'error': f"Snyk Batch API failed {response.status_code}", 'findings': []}
 
         except Exception as e:
