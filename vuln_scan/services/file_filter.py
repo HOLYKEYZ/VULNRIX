@@ -48,6 +48,9 @@ SOURCE_EXTENSIONS = {
     
     # Database
     '.sql', '.psql',
+    
+    # Dependencies (SCA)
+    '.txt', '.lock',
 }
 
 def is_safe_file(file_path: str) -> bool:

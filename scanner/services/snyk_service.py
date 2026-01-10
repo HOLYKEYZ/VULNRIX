@@ -24,7 +24,38 @@ class SnykService:
     V1_URL = "https://api.snyk.io/v1"
     
     def __init__(self, api_key: str = None):
+        # Fix: Force load .env from absolute path
+        try:
+            from dotenv import load_dotenv
+            from pathlib import Path
+            # File is in scanner/services/snyk_service.py -> Go up 3 levels to root
+            # Verify this path structure matches:
+            # c:\Users\USER\.vscode\Digital-Footprint-Shield\scanner\services\snyk_service.py
+            # parent -> services
+            # parent.parent -> scanner
+            # parent.parent.parent -> Digital-Footprint-Shield (ROOT)
+            env_path = Path(__file__).resolve().parent.parent.parent / '.env'
+            
+            logger.info(f"Auto-Loading .env from: {env_path}") # Debug Log
+            
+            if env_path.exists():
+                load_dotenv(dotenv_path=env_path, override=True)
+                logger.info(f"Loaded .env from {env_path}")
+            else:
+                 logger.warning(f".env file NOT FOUND at {env_path}")
+                 load_dotenv() # Fallback
+        except ImportError:
+            pass
+
         self.api_key = api_key or os.getenv('SNYK2_API_KEY') or os.getenv('SNYK_API_KEY')
+        
+        # Debug Log: Check if key is loaded (masked)
+        if self.api_key:
+             masked_key = f"{self.api_key[:4]}...{self.api_key[-4:]}"
+             logger.info(f"Snyk Service Initialized. API Key: {masked_key}")
+        else:
+             logger.warning("Snyk Service Initialized: NO API KEY FOUND")
+
         self.headers = {
             'Authorization': f'token {self.api_key}',
             'Content-Type': 'application/json'
@@ -77,6 +108,8 @@ class SnykService:
                 if orgs:
                     self._org_id = orgs[0].get('id')
                     return self._org_id
+            else:
+                logger.error(f"Snyk Orgs API Error {response.status_code}: {response.text}")
         except Exception as e:
             logger.error(f"Failed to get org ID: {e}")
         

@@ -11,11 +11,13 @@ import logging
 import hashlib
 import requests
 from pathlib import Path
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from django.conf import settings # Fix: Import settings
+from django.utils import timezone
 
 # Add vuln_scan directory to path for imports
 
@@ -678,7 +680,27 @@ def start_repo_scan(request):
 
                 if batch_files:
                     logger.info(f"Starting Batch Snyk Scan for {len(batch_files)} files...")
+                    # 1. SAST Scan (Code)
                     snyk_results = snyk.analyze_batch(batch_files)
+                    
+                    # 2. SCA Scan (Dependencies) - Iterate Manifests found in batch
+                    # This is critical for finding parity (26 vs 52 issues)
+                    manifests = ['package.json', 'package-lock.json', 'requirements.txt', 'gemfile', 'gemfile.lock', 'go.mod', 'pom.xml', 'yarn.lock']
+                    
+                    for bfile in batch_files:
+                        fname = bfile['path'].split('/')[-1].lower()
+                        if fname in manifests:
+                             logger.info(f"Running SCA on {bfile['path']}...")
+                             sca_res = snyk.analyze_dependencies(bfile['content'], fname)
+                             if sca_res.get('status') == 'VULNERABLE':
+                                  sca_findings = sca_res.get('findings', [])
+                                  if snyk_results.get('findings') is None:
+                                       snyk_results['findings'] = []
+                                  
+                                  # Append unique SCA findings
+                                  snyk_results['findings'].extend(sca_findings)
+                                  snyk_results['status'] = 'VULNERABLE'
+                                  logger.info(f"Added {len(sca_findings)} SCA findings.")
                     
                     # Cache results to disk for scan_next_file to pick up
                     if snyk_results.get('status') == 'VULNERABLE':
@@ -735,7 +757,7 @@ def scan_next_file(request, project_id):
             # Check if all done
             if not project.file_results.filter(status='PROCESSING').exists():
                 # Aggregate Risk Score
-                total_risk = sum(f.risk_score for f in project.file_results.all())
+                total_risk = sum((f.risk_score or 0) for f in project.file_results.all())
                 project.risk_score = total_risk
                 
                 project.status = 'COMPLETED'
@@ -879,7 +901,9 @@ def scan_next_file(request, project_id):
         
         findings = result.get('findings', [])
         if findings:
-            next_file.severity = 'HIGH' if result.get('risk_score') > 70 else 'MEDIUM'
+            # Fix: Handle None score to prevent 500 Error
+            score = result.get('risk_score') or 0
+            next_file.severity = 'HIGH' if score > 70 else 'MEDIUM'
         else:
             next_file.severity = 'SAFE'
             
