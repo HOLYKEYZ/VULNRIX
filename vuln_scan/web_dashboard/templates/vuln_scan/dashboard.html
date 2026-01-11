@@ -607,27 +607,42 @@ async function loadHistoryItem(id, type) {
         
         const data = await res.json();
         
+        // Check if data is valid
+        if (!data || data.error) {
+            throw new Error(data.error || 'Invalid response');
+        }
+        
         // Normalize Data for Render
-        // Project status returns slightly different keys
         if(type === 'project') {
-             // Map project keys to render expectation
-             data.filename = data.project_name + " (Repo)";
-             data.findings = data.findings || [];
-             // Ensure findings have consistent structure if needed
+             data.filename = data.project_name || `Project #${id}`;
+             data.status = data.status || 'UNKNOWN';
+             
+             // Findings are now already detailed from the backend (views.py)
+             // No manual conversion needed.
         } else {
-            // File data usually nested in 'result' key from get_scan_result endpoint
+            // File data usually nested in 'result' key
             if (data.result) {
-                Object.assign(data, data.result); // Flatten
+                Object.assign(data, data.result);
             }
+            data.filename = data.filename || `File #${id}`;
+        }
+        
+        // Final validation - check if we have valid findings or at least a status
+        if (!data.status && (!data.findings || data.findings.length === 0)) {
+            log(`Session data expired or empty. Start a new scan to see detailed results.`, 'warn');
+            document.getElementById('scanStatus').innerText = "NO DATA";
+            document.getElementById('scanStatus').className = "text-yellow-500 uppercase tracking-wider";
+            return;
         }
         
         renderResults(data);
         log(`History loaded successfully.`, 'success');
         
     } catch (e) {
-        log(`Error loading history: ${e.message}`, 'error');
-        document.getElementById('scanStatus').innerText = "ERROR";
-        document.getElementById('scanStatus').className = "text-rose-500 uppercase tracking-wider";
+        log(`Session expired or unavailable. Try a new scan.`, 'warn');
+        log(`(Technical: ${e.message})`, 'info');
+        document.getElementById('scanStatus').innerText = "EXPIRED";
+        document.getElementById('scanStatus').className = "text-yellow-500 uppercase tracking-wider";
     }
 }
 </script>

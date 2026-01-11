@@ -781,13 +781,35 @@ def project_status(request, project_id):
             elif f.severity == 'MEDIUM': med += 1
             elif f.severity == 'LOW': low += 1
             
-            findings_data.append({
-                "filename": f.filename,
-                "severity": f.severity,
-                "risk_score": f.risk_score,
-                "status": f.status,
-                "file_id": f.id  # Add file ID for drill-down
-            })
+            # Extract detailed findings
+            file_findings = f.get_findings()
+            
+            if file_findings:
+                # Add each individual finding
+                for finding in file_findings:
+                    findings_data.append({
+                        "filename": f.filename,
+                        "severity": finding.get('severity', f.severity),
+                        "type": finding.get('type', 'Unknown'),
+                        "risk_score": f.risk_score,
+                        "status": f.status,
+                        "line": finding.get('line', '-'),
+                        "description": finding.get('description', ''),
+                        "recommendation": finding.get('recommendation', ''),
+                        "location": finding.get('location', {}),
+                        "file_id": f.id
+                    })
+            else:
+                # Fallback for files with status but no detailed JSON
+                findings_data.append({
+                     "filename": f.filename,
+                     "severity": f.severity,
+                     "type": "File Status", 
+                     "risk_score": f.risk_score,
+                     "status": f.status,
+                     "description": f"File marked as {f.severity} (No detailed findings)",
+                     "file_id": f.id
+                })
             
         metrics = calculate_security_metrics(crit, high, med, low)
             
