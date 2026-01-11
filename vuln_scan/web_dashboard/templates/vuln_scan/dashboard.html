@@ -193,30 +193,6 @@
                 </div>
             </div>
 
-            <!-- DETAIL REPORT TABLE (Restored) -->
-            <div id="detailReport" class="hidden mt-6 bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden animate-in fade-in duration-500">
-                <div class="bg-[#252526] px-4 py-3 border-b border-[#333] flex justify-between items-center">
-                    <h3 class="font-mono text-sm text-gray-400">DEEP ANALYSIS REPORT</h3>
-                    <button onclick="document.getElementById('detailReport').classList.add('hidden')" class="text-xs text-gray-500 hover:text-white">CLOSE</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[800px] text-left border-collapse">
-                        <thead>
-                            <tr class="text-xs text-gray-500 uppercase font-mono border-b border-[#333]">
-                                <th class="p-3 w-20">Severity</th>
-                                <th class="p-3 w-48">Type</th>
-                                <th class="p-3 w-48">File</th>
-                                <th class="p-3 w-16">Line</th>
-                                <th class="p-3 min-w-[300px]">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody id="findingsTableBody" class="text-sm font-mono text-gray-300">
-                            <!-- Populated via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
 
          <!-- Right Sidebar: History -->
@@ -252,6 +228,30 @@
             <div class="card p-4 border-2 border-dashed border-border bg-transparent text-center">
                  <p class="text-sm text-muted">Need help? Check the <a href="{% url 'docs' %}" class="text-teal-500 hover:underline">Documentation</a>.</p>
             </div>
+        </div>
+    </div>
+
+    <!-- FULL-WIDTH ANALYSIS REPORT (Outside Grid) -->
+    <div id="detailReport" class="hidden mt-8 bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden animate-in fade-in duration-500">
+        <div class="bg-[#252526] px-4 py-3 border-b border-[#333] flex justify-between items-center">
+            <h3 class="font-mono text-sm text-gray-400">ANALYSIS REPORT</h3>
+            <button onclick="document.getElementById('detailReport').classList.add('hidden')" class="text-xs text-gray-500 hover:text-white">CLOSE</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-xs text-gray-500 uppercase font-mono border-b border-[#333]">
+                        <th class="p-3 w-24">Severity</th>
+                        <th class="p-3 w-56">Type</th>
+                        <th class="p-3 w-64">File</th>
+                        <th class="p-3 w-16">Line</th>
+                        <th class="p-3">Description</th>
+                    </tr>
+                </thead>
+                <tbody id="findingsTableBody" class="text-sm font-mono text-gray-300">
+                    <!-- Populated via JS -->
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
