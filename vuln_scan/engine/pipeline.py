@@ -188,10 +188,20 @@ class SecurityPipeline:
                 
                 # IMPORTANT: If regex found High Severity items (Credentials/RCE), trust them more
                 # even if AI says 'Safe' (AI often marks test data as safe, but users want to see it).
-                has_critical = any(get_severity_weight(f) >= 3 for f in semantic_findings)
+                critical_findings = [f for f in semantic_findings if get_severity_weight(f) >= 3]
+                has_critical = len(critical_findings) > 0
                 
-                # If AI says SAFE, discard regex findings UNLESS we have critical regex hits
-                final_findings = semantic_findings[:500] if (is_risky or has_critical) else []
+                # If AI says SAFE:
+                #   - Return ONLY critical regex hits (not ALL findings)
+                #   - This reduces false positives significantly
+                # If AI says risky:
+                #   - Return all findings for full context
+                if is_risky:
+                    final_findings = semantic_findings[:500]
+                elif has_critical:
+                    final_findings = critical_findings[:50]  # Only critical ones
+                else:
+                    final_findings = []
 
                 return {
                     "status": "VULNERABLE" if (is_risky or has_critical) else "SAFE",
