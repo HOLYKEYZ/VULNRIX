@@ -186,9 +186,10 @@ class SecurityPipeline:
 
                 is_risky = plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"]
                 
-                # IMPORTANT: If regex found High Severity items (Credentials/RCE), trust them more
+                # IMPORTANT: If regex found High Severity items (Credentials/RCE/XSS), trust them more
                 # even if AI says 'Safe' (AI often marks test data as safe, but users want to see it).
-                critical_findings = [f for f in semantic_findings if get_severity_weight(f) >= 3]
+                # Lowered threshold to 2 to include XSS & CSRF which are common in vulnerable apps.
+                critical_findings = [f for f in semantic_findings if get_severity_weight(f) >= 2]
                 has_critical = len(critical_findings) > 0
                 
                 # If AI says SAFE:
