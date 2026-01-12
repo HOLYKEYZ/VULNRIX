@@ -163,10 +163,13 @@ class SecurityPipeline:
                 # Sort findings to prioritize High Severity ones for the LLM Context
                 def get_severity_weight(f):
                     t = f.get('type', '').lower()
+                    # Critical/High Priority
                     if 'credential' in t or 'secret' in t or 'key' in t: return 3
                     if 'sql' in t or 'command' in t or 'remote' in t or 'exec' in t: return 3
-                    if 'xss' in t or 'csrf' in t: return 2
-                    return 1
+                    
+                    # Medium/High Priority (XSS, CSRF, Overflows, Logic Bugs)
+                    # DEFAULT TO 2 for almost everything to ensure we don't drop valid regex hits.
+                    return 2
                 
                 semantic_findings.sort(key=get_severity_weight, reverse=True)
                 
@@ -186,21 +189,22 @@ class SecurityPipeline:
 
                 is_risky = plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"]
                 
-                # IMPORTANT: If regex found High Severity items (Credentials/RCE/XSS), trust them more
-                # even if AI says 'Safe' (AI often marks test data as safe, but users want to see it).
-                # Lowered threshold to 2 to include XSS & CSRF which are common in vulnerable apps.
+                # IMPORTANT: TRUST REGEX.
+                # If regex found something, we KEEP it unless it's extremely trivial.
+                # AI is used for Context and Hints, NOT for suppressing findings.
+                # Threshold >= 2 means basically everything is kept.
                 critical_findings = [f for f in semantic_findings if get_severity_weight(f) >= 2]
                 has_critical = len(critical_findings) > 0
                 
                 # If AI says SAFE:
-                #   - Return ONLY critical regex hits (not ALL findings)
-                #   - This reduces false positives significantly
+                #   - Return ALL significant regex hits (Weight >= 2)
+                #   - This accounts for nearly all findings (XSS, Overflows, Secrets)
                 # If AI says risky:
                 #   - Return all findings for full context
                 if is_risky:
                     final_findings = semantic_findings[:500]
                 elif has_critical:
-                    final_findings = critical_findings[:50]  # Only critical ones
+                    final_findings = critical_findings[:500]  # Return significant ones
                 else:
                     final_findings = []
 
