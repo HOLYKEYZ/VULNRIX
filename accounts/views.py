@@ -12,7 +12,7 @@ from .forms import CustomUserCreationForm, CustomAuthenticationForm
 def register(request):
     """User registration."""
     if request.user.is_authenticated:
-        return redirect('scanner:dashboard')
+        return redirect('vuln_scan:dashboard')
     
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -26,8 +26,8 @@ def register(request):
             if authenticated_user is not None:
                 login(request, authenticated_user)
                 messages.success(request, f'Welcome to VULNRIX, {username}!')
-                # New User -> Docs
-                return redirect('docs')
+                # Always redirect to Code Scanner Dashboard
+                return redirect('vuln_scan:dashboard')
             else:
                 messages.error(request, 'Account created, but automatic login failed. Please log in manually.')
     else:
@@ -39,7 +39,7 @@ def register(request):
 def login_view(request):
     """User login."""
     if request.user.is_authenticated:
-        return redirect('scanner:dashboard')
+        return redirect('vuln_scan:dashboard')
     
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
@@ -51,14 +51,8 @@ def login_view(request):
                 login(request, user)
                 messages.success(request, f'Welcome back, {user.username}!')
                 
-                # Smart Redirect:
-                # If user has Scans -> Dashboard (Code Scanner)
-                # If user is New (0 Scans) -> Docs (Tutorial)
-                from scanner.models import ScanHistory
-                if ScanHistory.objects.filter(user=user).exists():
-                    return redirect('vuln_scan:dashboard')  # Code Scanner
-                else:
-                    return redirect('docs')
+                # Always redirect to Code Scanner Dashboard
+                return redirect('vuln_scan:dashboard')
             else:
                 messages.error(request, 'Invalid username/email or password.')
     else:
