@@ -567,7 +567,8 @@ function renderResults(data) {
             const type = isSnyk ? 'snyk' : (f.severity === 'high' ? 'error' : 'warn');
             
             log(`${prefix} [${f.severity.toUpperCase()}] ${f.type}: ${f.description || f.reason}`, type);
-            addFindingRow(f, data.filename);
+            // Use finding-specific filename (f.filename) if available, otherwise fallback to project/file name (data.filename)
+            addFindingRow(f, f.filename || data.filename);
             
             if(f.location) {
                 log(`   @ ${f.location.file || 'line'}:${f.location.line}`, 'info');
