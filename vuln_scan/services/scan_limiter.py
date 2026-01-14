@@ -7,9 +7,9 @@ from django.utils import timezone
 from ..web_dashboard.models import ScanUsage, ScanProject
 
 # Configuration Limits
-MAX_SCANS_PER_DAY = 20
-MAX_FILES_PER_REPO_SCAN = 50
-MAX_PROJECT_SIZE_MB = 5
+MAX_SCANS_PER_DAY = 30
+MAX_FILES_PER_REPO_SCAN = 500
+MAX_PROJECT_SIZE_MB = 8
 
 class ScanLimitExceeded(Exception):
     """Exception raised when a scan limit is exceeded."""
