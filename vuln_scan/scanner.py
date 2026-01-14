@@ -4,10 +4,8 @@ Fixed with auto-model discovery for Gemini
 
 Set your API keys as environment variables:
     GOOGLE_API_KEY                  - for Gemini
-    OPENAI_API_KEY                  - for OpenAI
-    ANTHROPIC_API_KEY or CLAUDE_KEY - for Claude  
     GROQ_KEY                        - for Groq
-    OPENROUTER_API_KEY              - for OpenRouter
+    GROK_KEY                        - for grok
 """
 
 import os
@@ -40,12 +38,7 @@ class GeminiProvider(LLMProvider):
     
     # Fallback models if auto-discovery fails
     FALLBACK_MODELS = [
-        "gemini-1.5-flash-002",
-        "gemini-1.5-flash-001",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro-002",
-        "gemini-1.5-pro-001",
-        "gemini-1.5-pro",
+        "gemini-2.5-flash"
     ]
     
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
