@@ -5,7 +5,7 @@ This single file REPLACES the entire providers/ folder.
 Just set your API keys as environment variables:
     GEMINI_API_KEY              - for Gemini
     GROQ_KEY                    - for Groq
-    GROk_API_KEY                    - for Grok
+    GROK_API_KEY                    - for Grok
 
 Or pass api_key directly to the provider constructor.
 """
