@@ -24,9 +24,11 @@ DEBUG = env('DEBUG', default=True)
 
 ALLOWED_HOSTS = [
     'vulnrix.onrender.com',
+    '.vercel.app',  # Allow all Vercel subdomains
     'localhost',
     '127.0.0.1',
-    os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
+    os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),
+    os.environ.get('VERCEL_URL', ''),
 ]
 # Clean up empty strings if env var is missing
 ALLOWED_HOSTS = [host for host in ALLOWED_HOSTS if host]
@@ -36,6 +38,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5000',
     'http://127.0.0.1:5000',
     'https://vulnrix.onrender.com',
+    'https://*.vercel.app', # Allow all Vercel subdomains for CSRF
 ]
 if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
     CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}")
@@ -177,30 +180,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 # =============================================================================
 # Controls automatic fallback to C implementations when APIs fail
 
-# =============================================================================
-# PRODUCTION SECURITY SETTINGS
-# =============================================================================
-# These settings are automatically enabled when DEBUG=False
-if not DEBUG:
-    # HTTPS/SSL Settings - Only enable on Render or if explicitly requested
-    if os.environ.get('RENDER') or os.environ.get('ENABLE_SSL'):
-        SECURE_SSL_REDIRECT = True
-        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    
-    # HSTS Settings (HTTP Strict Transport Security)
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    
-    # Cookie Security
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    
-    # Content Security
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
-    SECURE_BROWSER_XSS_FILTER = True
 
 FALLBACK_CONFIG = {
     # Global settings
@@ -279,20 +258,17 @@ NUMLOOKUP_API_KEY = env('NUMLOOKUP_API_KEY', default=None)
 VERIPHONE_API_KEY = env('VERIPHONE_API_KEY', default=None)
 
 # =============================================================================
-# PRODUCTION SECURITY SETTINGS
-# =============================================================================
 # =============================================================================
 # PRODUCTION SECURITY SETTINGS
 # =============================================================================
 # These settings are automatically enabled when DEBUG=False
 if not DEBUG:
-    # HTTPS/SSL Settings - Only enable on Render or if explicitly requested
-    if os.environ.get('RENDER') or os.environ.get('ENABLE_SSL'):
+    # HTTPS/SSL Settings - Enable on Render, Vercel, or if explicitly requested
+    if os.environ.get('RENDER') or os.environ.get('VERCEL') or os.environ.get('ENABLE_SSL'):
         SECURE_SSL_REDIRECT = True
         SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
     # HSTS Settings (HTTP Strict Transport Security)
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
