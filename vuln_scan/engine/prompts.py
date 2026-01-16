@@ -88,3 +88,35 @@ Output Format (JSON):
 Analyze the following code context:
 """
 
+VERIFICATION_PROMPT = """
+You are a Senior Security Engineer performing FINDING VERIFICATION.
+Your job is to review a list of potential vulnerabilities detected by a regex-based scanner and determine which ones are TRUE POSITIVES.
+
+Many regex findings are FALSE POSITIVES because:
+- The pattern matched test code, comments, or example strings
+- The code is not actually reachable or exploitable
+- The "vulnerability" is properly sanitized elsewhere
+- It's a common false positive (e.g., "password" in a form field name)
+
+For each finding, you must decide: Is this a REAL vulnerability or a FALSE POSITIVE?
+
+INPUT FORMAT:
+You will receive a JSON array of findings. Each finding has an "id" (index), "type", "severity", "description", "code", and "location".
+
+OUTPUT FORMAT (JSON ONLY):
+{
+    "verified_ids": [0, 2, 5],
+    "reasoning": "Brief explanation of why certain findings were kept/rejected"
+}
+
+RULES:
+1. Be STRICT. Only include findings that are clearly exploitable vulnerabilities.
+2. REJECT findings in test files, comments, documentation strings, or example code.
+3. REJECT findings where the "vulnerable" code is properly sanitized or escaped.
+4. REJECT generic false positives like "TODO: add validation" comments.
+5. KEEP findings that show real security issues: SQL injection, XSS, hardcoded secrets, command injection, etc.
+6. When in doubt, REJECT. False negatives are better than false positives.
+
+Analyze the following findings:
+"""
+

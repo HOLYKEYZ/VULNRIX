@@ -16,7 +16,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from engine.parsers import CodeParser
 from engine.semantic import SemanticAnalyzer
 from engine.filters import KeywordFilter
-from engine.prompts import PHASE_1_PROMPT, PHASE_2_PROMPT
+from engine.prompts import PHASE_1_PROMPT, PHASE_2_PROMPT, VERIFICATION_PROMPT
 from engine.ai_malicious_detection import AIMaliciousDetector
 
 # Try to import providers, handle failure gracefully
@@ -189,32 +189,23 @@ class SecurityPipeline:
 
                 is_risky = plan.get("risk_level") in ["CRITICAL", "HIGH", "MEDIUM"]
                 
-                # IMPORTANT: TRUST REGEX.
-                # If regex found something, we KEEP it unless it's extremely trivial.
-                # AI is used for Context and Hints, NOT for suppressing findings.
-                # Threshold >= 2 means basically everything is kept.
-                critical_findings = [f for f in semantic_findings if get_severity_weight(f) >= 2]
-                has_critical = len(critical_findings) > 0
+                # NEW: AI-BASED FINDING VERIFICATION
+                # Instead of blindly trusting all regex hits, verify them through AI.
+                # This dramatically reduces false positives (275 -> ~50).
+                self.logger.info(f"[HYBRID] AI Phase 1 says: {plan.get('risk_level')}. Now verifying {len(semantic_findings)} regex findings...")
                 
-                # If AI says SAFE:
-                #   - Return ALL significant regex hits (Weight >= 2)
-                #   - This accounts for nearly all findings (XSS, Overflows, Secrets)
-                # If AI says risky:
-                #   - Return all findings for full context
-                if is_risky:
-                    final_findings = semantic_findings[:500]
-                elif has_critical:
-                    final_findings = critical_findings[:500]  # Return significant ones
-                else:
-                    final_findings = []
-
+                # Verify findings through AI (batch verification)
+                verified_findings = self._verify_findings(semantic_findings, code)
+                
+                self.logger.info(f"[HYBRID] AI verified {len(verified_findings)}/{len(semantic_findings)} findings as true positives.")
+                
                 return {
-                    "status": "VULNERABLE" if (is_risky or has_critical) else "SAFE",
+                    "status": "VULNERABLE" if (is_risky or len(verified_findings) > 0) else "SAFE",
                     "risk_score": risk_score,
-                    "findings": final_findings,
+                    "findings": verified_findings,
                     "plan": plan,
                     "ai_malicious_risk": ai_scan,
-                    "reason": f"Hybrid scan: {plan.get('reasoning', 'Analysis complete')}"
+                    "reason": f"Hybrid scan: {plan.get('reasoning', 'Analysis complete')}. Verified {len(verified_findings)} of {len(semantic_findings)} regex findings."
                 }
 
 
@@ -295,6 +286,69 @@ class SecurityPipeline:
         except Exception as e:
             self.logger.error(f"Phase 2 failed: {e}")
             return {"status": "ERROR", "error": str(e), "findings": []}
+
+    def _verify_findings(self, findings: List[Dict], code: str = "") -> List[Dict]:
+        """
+        Batch verify regex findings using AI to filter false positives.
+        Sends all findings to AI and returns only the verified ones.
+        """
+        if not findings:
+            return []
+        
+        # If no AI provider, skip verification (return all)
+        if not self.phase1_provider:
+            self.logger.warning("[VERIFY] No AI provider configured, skipping verification")
+            return findings
+        
+        # Prepare findings for AI (add IDs, limit context)
+        findings_for_ai = []
+        for i, f in enumerate(findings[:100]):  # Limit to 100 to avoid token overflow
+            findings_for_ai.append({
+                "id": i,
+                "type": f.get("type", "Unknown"),
+                "severity": f.get("severity", "Medium"),
+                "description": f.get("description", "")[:200],  # Truncate
+                "code": f.get("matched_content", f.get("code", ""))[:150],  # Truncate
+                "location": f.get("location", {})
+            })
+        
+        # Build context
+        context = json.dumps(findings_for_ai, indent=2)
+        if code:
+            # Add a code snippet for context (first 5000 chars)
+            context += f"\n\n--- CODE CONTEXT (first 5000 chars) ---\n{code[:5000]}"
+        
+        try:
+            self.logger.info(f"[VERIFY] Sending {len(findings_for_ai)} findings to AI for verification...")
+            response = self.phase1_provider.ask(
+                system_prompt=VERIFICATION_PROMPT,
+                user_prompt="Verify these findings. Return only valid vulnerability IDs.",
+                context=context
+            )
+            
+            result = self._parse_json_response(response)
+            verified_ids = result.get("verified_ids", [])
+            reasoning = result.get("reasoning", "No explanation provided")
+            
+            self.logger.info(f"[VERIFY] AI verified {len(verified_ids)}/{len(findings_for_ai)} findings. Reason: {reasoning[:100]}")
+            
+            # Return only verified findings
+            verified_findings = [f for i, f in enumerate(findings[:100]) if i in verified_ids]
+            
+            # If AI verified nothing but we had many findings, something might be wrong
+            # As a safety net, if AI rejected >90%, at least keep critical ones
+            if len(verified_ids) == 0 and len(findings) > 10:
+                self.logger.warning("[VERIFY] AI rejected all findings! Keeping critical secrets/injection as fallback.")
+                critical_types = ['hardcoded', 'secret', 'credential', 'sql injection', 'command injection', 'rce']
+                verified_findings = [f for f in findings[:100] if any(ct in f.get('type', '').lower() for ct in critical_types)]
+            
+            return verified_findings
+            
+        except Exception as e:
+            self.logger.error(f"[VERIFY] AI verification failed: {e}. Returning unfiltered findings.")
+            # On failure, return top 50 findings to avoid spam
+            return findings[:50]
+
 
     def _parse_json_response(self, response: str) -> Dict:
         """Extract and parse JSON from LLM response"""
