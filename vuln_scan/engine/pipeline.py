@@ -112,6 +112,16 @@ class SecurityPipeline:
         try:
             # File Read
             try:
+                # Check size first (2MB limit)
+                file_size = os.path.getsize(file_path)
+                if file_size > 2 * 1024 * 1024:  # 2MB
+                    self.logger.warning(f"Skipping large file ({file_size} bytes): {file_path}")
+                    return {
+                        "status": "SKIPPED", 
+                        "reason": f"File too large ({file_size // 1024}KB > 2MB limit)",
+                        "findings": []
+                    }
+
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                     code = f.read()
                 self.logger.info(f"Read {len(code)} bytes")
