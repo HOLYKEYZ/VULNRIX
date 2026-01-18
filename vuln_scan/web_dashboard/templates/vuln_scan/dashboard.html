@@ -356,6 +356,13 @@ async function startFileScan(file) {
         renderResults(data);
 
     } catch (e) {
+        // Daily Limit Check
+        if (e.message && e.message.includes('Daily limit')) {
+            log(`⚠️ DAILY LIMIT REACHED (30 scans/day). Please try again tomorrow.`, 'error');
+            document.getElementById('scanStatus').innerText = "LIMIT REACHED";
+            document.getElementById('scanStatus').className = "text-orange-500 uppercase tracking-wider";
+            return;
+        }
         log(`CRITICAL ERROR: ${e.message}`, 'error');
         document.getElementById('scanStatus').innerText = "ERROR";
         document.getElementById('scanStatus').className = "text-rose-500 uppercase tracking-wider";
@@ -511,6 +518,13 @@ async function startRepoScan() {
         document.getElementById('statIssues').innerText = issuesCount;
         
     } catch (e) {
+        // Daily Limit Check
+        if (e.message && e.message.includes('Daily limit')) {
+            log(`⚠️ DAILY LIMIT REACHED (30 scans/day). Please try again tomorrow.`, 'error');
+            document.getElementById('scanStatus').innerText = "LIMIT REACHED";
+            document.getElementById('scanStatus').className = "text-orange-500 uppercase tracking-wider";
+            return;
+        }
         log(`CRITICAL ERROR: ${e.message}`, 'error');
          document.getElementById('scanStatus').innerText = "ERROR";
         document.getElementById('scanStatus').className = "text-rose-500 uppercase tracking-wider";

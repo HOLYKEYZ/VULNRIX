@@ -556,6 +556,7 @@ from ..services.repo_fetcher import clone_repo
 from ..services.result_aggregator import update_project_stats, create_file_result, calculate_security_metrics
 from ..services.llm_dispatcher import LLMDispatcher
 from ..services.file_filter import is_safe_file
+from ..services.scan_limiter import check_and_increment_usage, DailyQuotaExceeded
 
 SCAN_TEMP_BASE = Path(tempfile.gettempdir()) / "vulnrix_scans"
 SCAN_TEMP_BASE.mkdir(exist_ok=True)
@@ -571,6 +572,12 @@ def start_repo_scan(request):
         repo_url = request.POST.get('repo_url')
         if not repo_url:
             return JsonResponse({"error": "Missing repo_url"}, status=400)
+            
+        # Check Daily Limit
+        try:
+            check_and_increment_usage(request.user)
+        except DailyQuotaExceeded as e:
+            return JsonResponse({"error": str(e), "code": "DAILY_LIMIT_EXCEEDED"}, status=403)
             
         # Create Project
         project_name = repo_url.split('/')[-1].replace('.git', '')
@@ -870,6 +877,13 @@ def home(request):
             if not file:
                 return JsonResponse({"error": "No file uploaded"}, status=400)
                 
+            # Check Daily Limit
+            try:
+                from ..services.scan_limiter import check_and_increment_usage, DailyQuotaExceeded
+                check_and_increment_usage(request.user)
+            except DailyQuotaExceeded as e:
+                return JsonResponse({"error": str(e), "code": "DAILY_LIMIT_EXCEEDED"}, status=403)
+            
             # Create temp file
             temp_dir = Path(tempfile.gettempdir()) / "vulnrix_guest"
             temp_dir.mkdir(exist_ok=True)
