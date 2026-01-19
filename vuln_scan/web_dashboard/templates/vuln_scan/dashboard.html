@@ -135,6 +135,9 @@
                     <button class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors" id="tab-repo" onclick="switchTab('repo')">
                         <i class="fab fa-github mr-2"></i> Git Repo
                     </button>
+                    <button class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-colors" id="tab-github" onclick="switchTab('github')">
+                        <i class="fas fa-plug mr-2"></i> Connect GitHub
+                    </button>
                 </div>
                 
                 <div class="p-6">
@@ -175,6 +178,47 @@
                                 </button>
                             </div>
                             <p class="text-xs text-muted">Supports public GitHub, GitLab, and Bitbucket repositories.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- GITHUB APP CONNECT -->
+                    <div id="panel-github" class="hidden">
+                        <div class="flex flex-col items-center text-center py-6">
+                            <div class="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-700">
+                                <i class="fab fa-github text-4xl text-white"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-2">Connect Your GitHub</h3>
+                            <p class="text-muted text-sm mb-6 max-w-md">
+                                Install the VULNRIX GitHub App to enable automatic PR security reviews, 
+                                push-triggered scans, and AI-powered dependency fix PRs.
+                            </p>
+                            
+                            <div class="flex flex-col gap-3 w-full max-w-xs">
+                                <a href="https://github.com/apps/vulnrix/installations/new" 
+                                   target="_blank"
+                                   class="btn bg-white text-black hover:bg-zinc-200 font-medium px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2">
+                                    <i class="fab fa-github"></i>
+                                    Install VULNRIX App
+                                </a>
+                                
+                                <div class="text-xs text-muted mt-2">
+                                    <p class="mb-2">After installation, VULNRIX will:</p>
+                                    <ul class="text-left space-y-1">
+                                        <li class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500 text-xs"></i>
+                                            <span>Review PRs for security issues</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500 text-xs"></i>
+                                            <span>Scan code on every push</span>
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500 text-xs"></i>
+                                            <span>Create PRs to fix vulnerable deps</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

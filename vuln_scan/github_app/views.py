@@ -107,15 +107,18 @@ def handle_push_event(payload: dict) -> JsonResponse:
 
 def handle_pull_request_event(payload: dict) -> JsonResponse:
     """
-    Handle pull_request event - scan PR changes, optionally review.
+    Handle pull_request event - scan PR changes with AI security review.
     """
     action = payload.get('action', '')
     pr = payload.get('pull_request', {})
     repo = payload.get('repository', {})
+    installation_id = payload.get('installation', {}).get('id')
     
     repo_name = repo.get('full_name', 'unknown')
+    owner, repo_short = repo_name.split('/') if '/' in repo_name else ('', repo_name)
     pr_number = pr.get('number', 0)
     pr_title = pr.get('title', '')
+    diff_url = pr.get('diff_url', '')
     
     logger.info(f"PR event: {action} on {repo_name}#{pr_number} - {pr_title}")
     
@@ -123,17 +126,55 @@ def handle_pull_request_event(payload: dict) -> JsonResponse:
     if action not in ['opened', 'synchronize']:
         return JsonResponse({"message": f"PR action {action} ignored"})
     
-    # TODO: Queue a PR scan
-    # 1. Get the PR diff
-    # 2. Scan changed files
-    # 3. Post review comments on findings
+    if not installation_id:
+        logger.warning("No installation_id in PR event")
+        return JsonResponse({"error": "No installation_id"}, status=400)
     
-    return JsonResponse({
-        "message": "PR event received",
-        "action": action,
-        "repo": repo_name,
-        "pr_number": pr_number,
-    })
+    # Fetch the PR diff
+    try:
+        import requests
+        diff_response = requests.get(diff_url, timeout=30)
+        if diff_response.status_code != 200:
+            logger.error(f"Failed to fetch diff: {diff_response.status_code}")
+            return JsonResponse({"message": "PR received but diff fetch failed"})
+        
+        diff_content = diff_response.text
+        
+        # Get changed file paths from diff
+        file_paths = []
+        for line in diff_content.split('\n'):
+            if line.startswith('+++ b/'):
+                file_paths.append(line[6:])
+        
+        # Run AI security review
+        from .auto_fix import review_pr_for_security, post_pr_review_comment
+        from .services import github_app
+        
+        review_result = review_pr_for_security(diff_content, file_paths)
+        
+        # Post review as comment
+        post_pr_review_comment(github_app, installation_id, owner, repo_short, pr_number, review_result)
+        
+        logger.info(f"AI review completed for {repo_name}#{pr_number}: secure={review_result.get('is_secure')}")
+        
+        return JsonResponse({
+            "message": "PR reviewed",
+            "action": action,
+            "repo": repo_name,
+            "pr_number": pr_number,
+            "is_secure": review_result.get('is_secure', True),
+            "issues_found": len(review_result.get('issues', []))
+        })
+        
+    except Exception as e:
+        logger.error(f"PR review failed: {e}")
+        return JsonResponse({
+            "message": "PR event received, review failed",
+            "action": action,
+            "repo": repo_name,
+            "pr_number": pr_number,
+            "error": str(e)
+        })
 
 
 def handle_installation_event(payload: dict) -> JsonResponse:
