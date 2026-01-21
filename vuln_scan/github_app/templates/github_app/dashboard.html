@@ -5,29 +5,7 @@
 {% block content %}
 <div class="min-h-screen bg-black text-foreground font-sans selection:bg-teal-500/30">
     
-    <!-- Header -->
-    <header class="border-b border-zinc-800 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="container mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
-                    <i class="fas fa-shield-alt text-white text-sm"></i>
-                </div>
-                <span class="font-bold text-lg tracking-tight">VULNRIX <span class="text-zinc-500 font-normal">| GitHub</span></span>
-            </div>
-            
-            <nav class="flex items-center gap-4">
-                <a href="{% url 'vuln_scan:dashboard' %}" class="text-sm text-zinc-400 hover:text-white transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i> Back to Scanner
-                </a>
-                <div class="h-4 w-px bg-zinc-800"></div>
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
-                        <i class="fas fa-user text-xs text-zinc-400"></i>
-                    </div>
-                </div>
-            </nav>
-        </div>
-    </header>
+    <!-- Content handled by base.html structure -->
 
     <main class="container mx-auto px-6 py-12">
         
