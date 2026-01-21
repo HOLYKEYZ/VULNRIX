@@ -150,6 +150,9 @@
                 <a href="{% url 'vuln_scan:virustotal' %}" class="sidebar-link {% if 'virustotal' in request.path %}active{% endif %}">
                     <i class="fas fa-virus w-4"></i> VirusTotal Check
                 </a>
+                <a href="{% url 'github_app:dashboard' %}" class="sidebar-link {% if 'github' in request.path %}active{% endif %}">
+                    <i class="fab fa-github w-4"></i> GitHub Integration
+                </a>
             </div>
 
             <div class="sidebar-section">
