@@ -315,14 +315,91 @@ def trigger_repo_scan(request):
     if not install:
         return JsonResponse({"error": "Installation not found or not owned"}, status=403)
     
-    owner, repo = repo_full_name.split('/')
+    # Authenticate and get token
+    try:
+        token = github_app.get_installation_token(install.installation_id)
+    except Exception as e:
+        logger.error(f"Failed to get installation token: {e}")
+        return JsonResponse({"error": "Failed to authenticate with GitHub"}, status=500)
+
+    # Check Quota
+    from vuln_scan.services.scan_limiter import check_and_increment_usage, DailyQuotaExceeded
+    try:
+        check_and_increment_usage(request.user)
+    except DailyQuotaExceeded as e:
+        return JsonResponse({"error": str(e)}, status=403)
+
+    # Prepare Scan Project
+    from vuln_scan.web_dashboard.models import ScanProject, ScanFileResult
+    from vuln_scan.services.repo_fetcher import clone_repo
+    from vuln_scan.services.file_filter import is_safe_file
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    SCAN_TEMP_BASE = Path(tempfile.gettempdir()) / "vulnrix_scans"
+    SCAN_TEMP_BASE.mkdir(exist_ok=True)
+
+    owner, repo_name = repo_full_name.split('/')
+    project_name = repo_name
     
-    # For now, just return success - actual scan would be queued
-    # The existing repo scan logic can be adapted here
+    # Create Project Record
+    project = ScanProject.objects.create(
+        user=request.user,
+        name=project_name,
+        repo_url=f"https://github.com/{repo_full_name}", # Display URL
+        status='INITIALIZING'
+    )
+    
+    # Directory setup
+    project_dir = SCAN_TEMP_BASE / str(project.id)
+    if project_dir.exists():
+        shutil.rmtree(project_dir)
+    project_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Construct Authenticated URL for Cloning
+    auth_repo_url = f"https://x-access-token:{token}@github.com/{repo_full_name}.git"
+
+    # Clone
+    success, error_msg = clone_repo(auth_repo_url, str(project_dir))
+    if not success:
+        project.status = 'ERROR'
+        project.save()
+        return JsonResponse({"error": f"Clone Failed: {error_msg}"}, status=400)
+    
+    # Discover files
+    files_created = []
+    current_limit = 500  # Sync with web_dashboard views
+    
+    for root, _, files in os.walk(project_dir):
+        if '.git' in root: continue
+        
+        for file in files:
+            full_path = Path(root) / file
+            rel_path = full_path.relative_to(project_dir)
+            
+            if is_safe_file(str(full_path)):
+                res = ScanFileResult.objects.create(
+                    project=project,
+                    filename=str(rel_path).replace('\\', '/'),
+                    status='PENDING'
+                )
+                files_created.append(res)
+                
+                if len(files_created) >= current_limit:
+                    break
+        if len(files_created) >= current_limit:
+            break
+            
+    project.total_files = len(files_created)
+    project.status = 'READY'
+    project.save()
+    
     return JsonResponse({
-        "message": "Scan queued",
+        "message": "Scan queued successfully",
+        "project_id": project.id,
         "repo": repo_full_name,
-        "installation_id": installation_id,
+        "total_files": project.total_files
     })
 
 

@@ -479,27 +479,16 @@ async function startFileScan(file) {
 }
 
 // --- REPO SCAN LOGIC (LIVE TERMINAL) ---
+// --- REPO SCAN LOGIC (LIVE TERMINAL) ---
 async function startRepoScan() {
     const url = document.getElementById('repoUrl').value;
-    let speedWarned = false; // Fix: Declare variable in scope
     
     if(!url) {
         log("Error: Please enter a valid Git URL", 'error');
         return;
     }
 
-    term.innerHTML = ''; // Clear terminal
-    document.getElementById('findingsTableBody').innerHTML = ''; // Clear table
-    document.getElementById('detailReport').classList.add('hidden');
-    
-    document.getElementById('scanStatus').innerText = "INITIALIZING...";
-    document.getElementById('scanStatus').className = "text-teal-500 animate-pulse uppercase tracking-wider";
-    
-    // Reset Stats
-    document.getElementById('statGrade').innerText = "-";
-    document.getElementById('statScore').innerText = "0%";
-    document.getElementById('statGrade').className = "text-2xl font-bold";
-    document.getElementById('statIssues').innerText = "0";
+    resetTerminal();
     
     // Phase 1: Clone & Index
     log(`Initializing Repo Scan...`, 'info');
@@ -522,9 +511,7 @@ async function startRepoScan() {
         
         if(initData.error) throw new Error(initData.error);
         
-        // Check for Large Repo Warning (Snyk Fallback)
         if(initData.warning) {
-             // alert(initData.warning); // Removed blocking alert
              log(`NOTICE: ${initData.warning}`, 'snyk');
         }
 
@@ -533,36 +520,73 @@ async function startRepoScan() {
         
         log(`Clone Complete. Project ID: ${projectId}`, 'success');
         log(`Found ${totalFiles} source files to analyze.`, 'info');
-        log(`Starting sequential analysis pipeline...`, 'warn');
-        log('----------------------------------------', 'info');
+        
+        // Phase 2: Run Loop
+        await runScanLoop(projectId, totalFiles);
+        
+    } catch (e) {
+        handleScanError(e);
+    }
+}
 
-        // Phase 2: Sequential Scan (The "Matrix" Effect)
-        let issuesCount = 0;
-        let processed = 0;
-        let isComplete = false;
-        
-        // Initialize UI
-        const scanProgressContainer = document.getElementById('scanProgressContainer');
-        const scanProgressBar = document.getElementById('scanProgressBar');
-        const scanProgressPercent = document.getElementById('scanProgressPercent');
-        const scanProgressText = document.getElementById('scanProgressText');
-        
-        scanProgressContainer.classList.remove('hidden');
-        document.getElementById('scanStatus').innerText = "SCANNING...";
-        
-        while(!isComplete && processed < totalFiles) {
-            // Update Progress
-            const percentage = Math.round((processed / totalFiles) * 100);
-            scanProgressBar.style.width = `${percentage}%`;
-            scanProgressPercent.innerText = `${percentage}%`;
-            scanProgressText.innerText = `ANALYZING FILE ${processed + 1} / ${totalFiles}`;
+// Reset UI helper
+function resetTerminal() {
+    term.innerHTML = '';
+    document.getElementById('findingsTableBody').innerHTML = '';
+    document.getElementById('detailReport').classList.add('hidden');
+    
+    document.getElementById('scanStatus').innerText = "INITIALIZING...";
+    document.getElementById('scanStatus').className = "text-teal-500 animate-pulse uppercase tracking-wider";
+    
+    document.getElementById('statGrade').innerText = "-";
+    document.getElementById('statScore').innerText = "0%";
+    document.getElementById('statIssues').innerText = "0";
+}
 
-            // Request next file scan
-            // FIX: Use correct URL prefix 'dashboard' instead of 'vuln'
-            // FIX: Pass currentMode to enable AI scanning
+// Error Handler
+function handleScanError(e) {
+    if (e.message && e.message.includes('Daily limit')) {
+        log(`⚠️ DAILY LIMIT REACHED (30 scans/day). Please try again tomorrow.`, 'error');
+        document.getElementById('scanStatus').innerText = "LIMIT REACHED";
+        document.getElementById('scanStatus').className = "text-orange-500 uppercase tracking-wider";
+        return;
+    }
+    log(`CRITICAL ERROR: ${e.message}`, 'error');
+    document.getElementById('scanStatus').innerText = "ERROR";
+    document.getElementById('scanStatus').className = "text-rose-500 uppercase tracking-wider";
+}
+
+// Shared Scan Loop
+async function runScanLoop(projectId, totalFiles) {
+    log(`Starting sequential analysis pipeline...`, 'warn');
+    log('----------------------------------------', 'info');
+
+    let issuesCount = 0;
+    let processed = 0;
+    let isComplete = false;
+    let speedWarned = false;
+    
+    // Initialize UI
+    const scanProgressContainer = document.getElementById('scanProgressContainer');
+    const scanProgressBar = document.getElementById('scanProgressBar');
+    const scanProgressPercent = document.getElementById('scanProgressPercent');
+    const scanProgressText = document.getElementById('scanProgressText');
+    
+    scanProgressContainer.classList.remove('hidden');
+    document.getElementById('scanStatus').innerText = "SCANNING...";
+    
+    while(!isComplete && processed < totalFiles) {
+        // Update Progress
+        const percentage = Math.round((processed / totalFiles) * 100);
+        scanProgressBar.style.width = `${percentage}%`;
+        scanProgressPercent.innerText = `${percentage}%`;
+        scanProgressText.innerText = `ANALYZING FILE ${processed + 1} / ${totalFiles}`;
+
+        // Request next file scan
+        try {
             const scanRes = await fetch(`/dashboard/project/${projectId}/scan-file/`, {
                 method: 'POST',
-                body: new URLSearchParams({ 'mode': currentMode }), // Pass mode here
+                body: new URLSearchParams({ 'mode': currentMode }),
                 headers: { 
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value 
@@ -575,9 +599,7 @@ async function startRepoScan() {
             }
             const scanData = await scanRes.json();
             
-            // DEBUG: See why it's completing early
             if(scanData.status === 'COMPLETED' || scanData.status === 'COMPLETE') {
-                log(`[DEBUG] Received COMPLETE signal. Pending: ${scanData.pending_count || '?'}`, 'warn');
                 scanProgressBar.style.width = `100%`;
                 scanProgressPercent.innerText = `100%`;
                 isComplete = true;
@@ -590,16 +612,13 @@ async function startRepoScan() {
                 const findings = scanData.findings || [];
                 issuesCount += findings.length;
                 
-                // Warn about speed for AI modes (ONCE)
                 if (!speedWarned && (currentMode === 'hybrid' || currentMode === 'deep')) {
-                    log(`NOTE: ${currentMode.toUpperCase()} Mode enabled. Analysis may be slower due to AI API latency & rate-limiting.`, 'warning');
-                    speedWarned = true; // Prevent spam
+                    log(`NOTE: ${currentMode.toUpperCase()} Mode enabled. Analysis may be slower due to AI API latency.`, 'warning');
+                    speedWarned = true;
                 }
                 
-                // Log the file action
                 log(`[${processed}/${totalFiles}] Analyzing ${fname}...`, 'info');
                 
-                // Log specific findings if any
                 if(findings.length > 0) {
                      findings.forEach(issue => {
                          const color = issue.severity === 'high' ? 'error' : (issue.severity === 'medium' ? 'warn' : 'info');
@@ -608,37 +627,44 @@ async function startRepoScan() {
                      });
                      document.getElementById('detailReport').classList.remove('hidden');
                 }
-                
-                // Slight delay for visual effect if it's too fast
-                // await new Promise(r => setTimeout(r, 100));
             }
+        } catch(loopErr) {
+            log(`Scan Loop Interrupt: ${loopErr.message}`, 'error');
+            break;
         }
-        
-        // Phase 3: Completion
-        log('----------------------------------------', 'info');
-        log(`Repository Analysis Complete.`, 'success');
-        log(`Total Files Scanned: ${processed}`, 'info');
-        log(`Total Issues Found: ${issuesCount}`, issuesCount > 0 ? 'warn' : 'success');
-        
-        document.getElementById('scanStatus').innerText = "DONE";
-        document.getElementById('scanStatus').className = "text-teal-500 uppercase tracking-wider";
-        
-        // Update Stats UI
-        document.getElementById('statIssues').innerText = issuesCount;
-        
-    } catch (e) {
-        // Daily Limit Check
-        if (e.message && e.message.includes('Daily limit')) {
-            log(`⚠️ DAILY LIMIT REACHED (30 scans/day). Please try again tomorrow.`, 'error');
-            document.getElementById('scanStatus').innerText = "LIMIT REACHED";
-            document.getElementById('scanStatus').className = "text-orange-500 uppercase tracking-wider";
-            return;
-        }
-        log(`CRITICAL ERROR: ${e.message}`, 'error');
-         document.getElementById('scanStatus').innerText = "ERROR";
-        document.getElementById('scanStatus').className = "text-rose-500 uppercase tracking-wider";
     }
+    
+    // Completion Phase
+    log('----------------------------------------', 'info');
+    log(`Analysis Complete.`, 'success');
+    log(`Total Files Scanned: ${processed}`, 'info');
+    log(`Total Issues Found: ${issuesCount}`, issuesCount > 0 ? 'warn' : 'success');
+    
+    document.getElementById('scanStatus').innerText = "DONE";
+    document.getElementById('scanStatus').className = "text-teal-500 uppercase tracking-wider";
+    document.getElementById('statIssues').innerText = issuesCount;
 }
+
+// Auto-Start from URL params
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project_id');
+    const totalFiles = urlParams.get('total_files');
+    const repoName = urlParams.get('repo');
+    
+    if (projectId && totalFiles) {
+        console.log("Auto-starting scan for project", projectId);
+        
+        // Switch to File/Terminal Tab
+        switchTab('file');
+        
+        // Reset and Start
+        resetTerminal();
+        log(`Resuming background scan for ${repoName || 'Project #' + projectId}...`, 'success');
+        
+        runScanLoop(projectId, parseInt(totalFiles));
+    }
+});
 
 // --- TABLE HELPER ---
 function addFindingRow(issue, filename) {
