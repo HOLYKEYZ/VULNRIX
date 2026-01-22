@@ -199,9 +199,25 @@ def handle_installation_event(payload: dict) -> JsonResponse:
     
     if action == 'created':
         # Find user by GitHub username (from OAuth or sender)
+        # 1. Try standard 'gh_' username
         user = User.objects.filter(username=f"gh_{sender_login}").first()
         if not user:
             user = User.objects.filter(username=f"gh_{account_login}").first()
+            
+        # 2. Try linked profile (Normal Email User)
+        if not user:
+            from accounts.models import UserProfile
+            try:
+                # Check sender login
+                profile = UserProfile.objects.filter(github_username__iexact=sender_login).first()
+                if not profile:
+                    # Check account login (if it's a user install)
+                    profile = UserProfile.objects.filter(github_username__iexact=account_login).first()
+                
+                if profile:
+                    user = profile.user
+            except Exception as e:
+                logger.warning(f"Failed to lookup profile: {e}")
         
         if user:
             GitHubInstallation.objects.update_or_create(
