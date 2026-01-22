@@ -100,28 +100,16 @@ def github_callback(request):
     github_name = github_user.get('name') or github_username
     
     # Fetch email (might be private)
-    email = github_user.get('email')
-    if not email:
-        emails_response = requests.get(GITHUB_EMAILS_API, headers=headers, timeout=10)
-        if emails_response.status_code == 200:
-            emails = emails_response.json()
-            primary = next((e for e in emails if e.get('primary')), None)
-            if primary:
-                email = primary.get('email')
-    
-    if not email:
-        email = f"{github_username}@github.vulnrix.local"  # Fallback
-    
-    # Find or create user
-    # Strategy: Match by email first, then by github username
-    user = None
-    
     # 1. LINKING MODE: If user is already logged in, link this GitHub account to them
     if request.user.is_authenticated:
         user = request.user
         logger.info(f"Linking GitHub account {github_username} to existing user {user.username}")
-        # Store GitHub username in user profile if needed (or just rely on installation link)
-        # For now, we rely on the implementation sync block below
+        
+        # Store GitHub username in profile for webhook lookup
+        if hasattr(user, 'profile'):
+            user.profile.github_username = github_username
+            user.profile.save()
+            logger.info(f"Updated profile for {user.username}: github_username={github_username}")
     else:
         # 2. LOGIN MODE: Find existing user or create new one
         user = User.objects.filter(email=email).first()

@@ -26,6 +26,9 @@ class UserProfile(models.Model):
     email_notifications = models.BooleanField(default=True)
     slack_webhook = models.URLField(blank=True, null=True)
     
+    # Linked Accounts
+    github_username = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    
     # Monitoring
     monitoring_enabled = models.BooleanField(default=False)
     monitoring_interval_hours = models.IntegerField(default=24)
