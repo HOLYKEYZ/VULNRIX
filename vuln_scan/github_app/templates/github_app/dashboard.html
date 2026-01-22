@@ -28,11 +28,10 @@
                 Install the VULNRIX GitHub App to enable automatic PR security reviews, 
                 push-triggered scans, and AI-powered dependency fix PRs.
             </p>
-            <a href="https://github.com/apps/vulnrix/installations/new" 
-               target="_blank"
+            <a href="{% url 'accounts:github_login' %}" 
                class="btn bg-white text-black hover:bg-zinc-200 font-medium px-8 py-3 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-white/10">
                 <i class="fab fa-github"></i>
-                Install VULNRIX App
+                Connect GitHub Account
             </a>
             
             <div class="grid grid-cols-3 gap-8 mt-12 text-center">

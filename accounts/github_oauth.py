@@ -114,25 +114,35 @@ def github_callback(request):
     
     # Find or create user
     # Strategy: Match by email first, then by github username
-    user = User.objects.filter(email=email).first()
+    user = None
     
-    if not user:
-        # Try matching by username (prefixed with gh_)
-        user = User.objects.filter(username=f"gh_{github_username}").first()
-    
-    if not user:
-        # Create new user
-        user = User.objects.create_user(
-            username=f"gh_{github_username}",
-            email=email,
-            first_name=github_name,
-        )
-        user.set_unusable_password()  # No password (OAuth only)
-        user.save()
-        logger.info(f"Created new user from GitHub: {user.username}")
-    
-    # Login the user
-    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    # 1. LINKING MODE: If user is already logged in, link this GitHub account to them
+    if request.user.is_authenticated:
+        user = request.user
+        logger.info(f"Linking GitHub account {github_username} to existing user {user.username}")
+        # Store GitHub username in user profile if needed (or just rely on installation link)
+        # For now, we rely on the implementation sync block below
+    else:
+        # 2. LOGIN MODE: Find existing user or create new one
+        user = User.objects.filter(email=email).first()
+        
+        if not user:
+            # Try matching by username (prefixed with gh_)
+            user = User.objects.filter(username=f"gh_{github_username}").first()
+        
+        if not user:
+            # Create new user
+            user = User.objects.create_user(
+                username=f"gh_{github_username}",
+                email=email,
+                first_name=github_name,
+            )
+            user.set_unusable_password()  # No password (OAuth only)
+            user.save()
+            logger.info(f"Created new user from GitHub: {user.username}")
+        
+        # Login the user
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
     
     # =========================================================================
     # SYNC INSTALLATIONS
