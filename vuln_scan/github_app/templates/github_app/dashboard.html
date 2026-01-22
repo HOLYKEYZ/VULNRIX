@@ -203,7 +203,19 @@ async function triggerScan(repoFullName, installationId) {
         
         const data = await response.json();
         if (response.ok) {
-            showToast('Scan started successfully!', 'success');
+            showToast('Scan queued! Redirecting to dashboard...', 'success');
+            
+            // Redirect to main scanner to watch progress
+            if (data.project_id) {
+                setTimeout(() => {
+                    const params = new URLSearchParams({
+                        project_id: data.project_id,
+                        total_files: data.total_files || 0,
+                        repo: data.repo || repoFullName
+                    });
+                    window.location.href = `/dashboard/?${params.toString()}`;
+                }, 1500);
+            }
         } else {
             showToast(data.error || 'Scan failed', 'error');
         }
