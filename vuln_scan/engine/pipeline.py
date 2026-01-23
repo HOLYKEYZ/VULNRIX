@@ -171,12 +171,15 @@ class SecurityPipeline:
 
             # FAST MODE: No LLM, pure local analysis (includes SCA + Taint)
             if mode == 'fast':
-                status = "VULNERABLE" if all_findings else "SAFE"
+                # DEDUPLICATION: Remove duplicates across engines
+                final_findings = self._deduplicate_findings(all_findings)
+                status = "VULNERABLE" if final_findings else "SAFE"
+                
                 return {
                     "status": status,
                     "reason": f"Fast scan completed (Local Analysis: {len(semantic_findings)} semantic, {len(sca_findings)} SCA, {len(taint_findings)} taint).",
                     "risk_score": risk_score,
-                    "findings": all_findings[:500],
+                    "findings": final_findings[:500],
                     "semantic_hints": semantic_findings[:100],
                     "sca_findings": sca_findings,
                     "taint_findings": taint_findings,
