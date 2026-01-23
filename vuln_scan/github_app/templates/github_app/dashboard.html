@@ -201,7 +201,6 @@ async function triggerScan(repoFullName, installationId) {
         });
         
         const data = await response.json();
-        console.log("Scan Response Data:", data);
         
         if (response.ok) {
             showToast('Scan queued! Redirecting...', 'success');
@@ -213,19 +212,14 @@ async function triggerScan(repoFullName, installationId) {
                     total_files: data.total_files || 0,
                     repo: data.repo || repoFullName
                 });
-                const targetUrl = `/dashboard/?${params.toString()}`;
-                console.log("Redirecting to:", targetUrl);
-                window.location.href = targetUrl;
+                window.location.href = `/dashboard/?${params.toString()}`;
             } else {
-                console.error("Missing project_id in response", data);
                 showToast("Error: No Project ID returned", 'error');
             }
         } else {
-            console.error("Scan Failed:", data);
             showToast(data.error || 'Scan failed', 'error');
         }
     } catch (e) {
-        console.error("Network Error:", e);
         showToast('Network error: ' + e.message, 'error');
     }
 }
