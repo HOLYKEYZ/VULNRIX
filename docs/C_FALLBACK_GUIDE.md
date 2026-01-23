@@ -101,7 +101,6 @@ FALLBACK_CONFIG = {
 # Primary APIs
 GOOGLE_API_KEY=your_key
 INTELX_API_KEY=your_key
-HIBP_API_KEY=your_key
 SHODAN_API_KEY=your_key
 
 # Backup keys (for rotation)
