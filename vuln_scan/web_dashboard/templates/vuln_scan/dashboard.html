@@ -54,7 +54,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto max-w-[95%] pb-10 px-6">
+<div class="container mx-auto max-w-full pb-10 px-8">
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 pt-6">
         <div>
@@ -697,7 +697,7 @@ function addFindingRow(issue, filename) {
     tr.innerHTML = `
         <td class="p-3 ${sevColor} font-bold align-top whitespace-nowrap">${issue.severity.toUpperCase()}</td>
         <td class="p-3 text-gray-300 align-top whitespace-nowrap">${issue.type}</td>
-        <td class="p-3 text-gray-400 text-xs font-mono align-top whitespace-nowrap" title="${filename}">${filename ? (filename.length > 20 ? filename.substr(0,17)+'...' : filename) : '-'}</td>
+        <td class="p-3 text-gray-400 text-xs font-mono align-top whitespace-nowrap" title="${filename}">${filename ? (filename.length > 60 ? filename.substr(0,57)+'...' : filename) : '-'}</td>
         <td class="p-3 text-teal-500 font-mono text-xs align-top">${lineNum}</td>
         <td class="p-3 text-gray-300 align-top">
             <div class="mb-2">${issue.description || issue.type || 'Potential vulnerability detected'}</div>
