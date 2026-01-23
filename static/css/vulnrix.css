@@ -143,7 +143,7 @@ code, pre {
     margin-right: auto;
     padding-left: 2rem;
     padding-right: 2rem;
-    max-width: 1400px;
+    max-width: 100%; /* Full Width for Dashboard */
 }
 
 .grid {
@@ -653,6 +653,7 @@ tr:hover { background-color: hsl(var(--muted) / 0.5); }
     right: 0;
     height: 3px;
     background: linear-gradient(90deg, #00d4d4, transparent);
+}
 /* ==========================================================================
    HACKER THEME (DARKWEB OSINT VIBE)
    ========================================================================== */
