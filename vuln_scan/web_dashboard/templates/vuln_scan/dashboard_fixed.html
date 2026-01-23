@@ -66,7 +66,7 @@
 {% block content %}
 <div class="w-full pb-10 px-6">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 pt-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 pt-6 px-4">
         <div>
             <div class="flex items-center gap-3 mb-2">
                 <div class="p-3 bg-teal-500/10 rounded-lg text-teal-500">
@@ -132,9 +132,9 @@
         </div>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Main Scanner Area (Control Panel) -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="md:col-span-2 space-y-6">
             
             <!-- Input Card -->
             <div class="card border border-border bg-card overflow-hidden">
@@ -215,7 +215,7 @@
         </div>
 
          <!-- Right Sidebar: History -->
-        <div class="lg:col-span-1 space-y-6">
+        <div class="md:col-span-1 space-y-6">
             <div class="card p-0 border border-border bg-card overflow-hidden">
                 <div class="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
                     <h3 class="font-bold text-sm uppercase tracking-wide text-muted-foreground">Recent Scans</h3>
@@ -271,11 +271,11 @@
             <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-[#1a1a1a] z-10 shadow-sm">
                     <tr class="text-xs text-gray-400 uppercase font-mono border-b border-[#333]">
-                        <th class="p-4 w-[10%] bg-[#252526]">Severity</th>
-                        <th class="p-4 w-[15%] bg-[#252526]">Type</th>
-                        <th class="p-4 w-[30%] bg-[#252526]">File</th>
+                        <th class="p-4 w-[8%] bg-[#252526]">Severity</th>
+                        <th class="p-4 w-[12%] bg-[#252526]">Type</th>
+                        <th class="p-4 w-[25%] bg-[#252526]">File</th>
                         <th class="p-4 w-[5%] bg-[#252526]">Line</th>
-                        <th class="p-4 w-[40%] bg-[#252526]">Description</th>
+                        <th class="p-4 w-[50%] bg-[#252526]">Description</th>
                     </tr>
                 </thead>
                 <tbody id="findingsTableBody" class="text-sm font-mono text-gray-300 divide-y divide-[#333]">

@@ -238,7 +238,7 @@ def dashboard(request):
             context['security_grade'] = metrics['grade']
             context['security_score'] = metrics['score']
         
-        return render(request, "vuln_scan/dashboard.html", context)
+        return render(request, "vuln_scan/dashboard_fixed.html", context)
 
     if request.method == "POST":
         tmp_path = None
