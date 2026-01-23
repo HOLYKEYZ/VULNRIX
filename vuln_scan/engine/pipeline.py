@@ -236,9 +236,11 @@ class SecurityPipeline:
                 verified_semantic = self._verify_findings(semantic_findings, code)
                 
                 # Combine: verified semantic + all SCA (trusted) + all taint (trusted)
-                final_findings = verified_semantic + sca_findings + taint_findings
+                # DEDUPLICATION: Remove duplicates across engines (e.g. Taint finding same as Semantic)
+                raw_findings = verified_semantic + sca_findings + taint_findings
+                final_findings = self._deduplicate_findings(raw_findings)
                 
-                self.logger.info(f"[HYBRID] Final: {len(final_findings)} findings (semantic: {len(verified_semantic)}, sca: {len(sca_findings)}, taint: {len(taint_findings)})")
+                self.logger.info(f"[HYBRID] Final: {len(final_findings)} findings (deduplicated from {len(raw_findings)})")
                 
                 return {
                     "status": "VULNERABLE" if (is_risky or len(final_findings) > 0) else "SAFE",
@@ -447,7 +449,6 @@ class SecurityPipeline:
                 self.logger.error(f"JSON Parsing failed: {e}")
                 return {"raw_response": response, "error": "Failed to parse JSON"}
         
-        # Enforce Dict return type
         if isinstance(parsed, dict):
             return parsed
         elif isinstance(parsed, list):
@@ -455,3 +456,36 @@ class SecurityPipeline:
         else:
             # String or other primitive
             return {"parsed_content": str(parsed), "raw_response": response}
+
+    def _deduplicate_findings(self, findings: List[Dict]) -> List[Dict]:
+        """
+        Deduplicate findings from multiple engines.
+        Prioritizes by severity and engine confidence.
+        """
+        unique_map = {}
+        
+        for f in findings:
+            # Create a unique key based on type, line, and code snippet
+            f_type = f.get('type', 'unknown').lower().strip()
+            line = f.get('location', {}).get('line', '0')
+            # Use snippet hash to catch same issue found by different engines
+            code_snippet = f.get('matched_content', f.get('code', ''))[:30].strip()
+            
+            key = f"{f_type}:{line}:{code_snippet}"
+            
+            existing = unique_map.get(key)
+            if not existing:
+                unique_map[key] = f
+            else:
+                # Conflict resolution: Keep the one with higher severity or description length
+                ex_sev = existing.get('severity', 'low').lower()
+                new_sev = f.get('severity', 'low').lower()
+                
+                sev_rank = {'critical': 4, 'high': 3, 'medium': 2, 'low': 1, 'safe': 0}
+                
+                if sev_rank.get(new_sev, 0) > sev_rank.get(ex_sev, 0):
+                    unique_map[key] = f
+                elif len(f.get('description', '')) > len(existing.get('description', '')):
+                    unique_map[key] = f
+                    
+        return list(unique_map.values())

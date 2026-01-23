@@ -635,6 +635,9 @@ async function runScanLoop(projectId, totalFiles) {
     }
     
     // Completion Phase
+    scanProgressBar.style.width = '100%';
+    scanProgressPercent.innerText = '100%';
+    
     log('----------------------------------------', 'info');
     log(`Analysis Complete.`, 'success');
     log(`Total Files Scanned: ${processed}`, 'info');
