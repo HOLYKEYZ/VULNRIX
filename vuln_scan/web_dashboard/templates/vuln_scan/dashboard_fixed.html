@@ -60,6 +60,21 @@
         max-width: 100vw !important;
         overflow-x: hidden;
     }
+    
+    /* EXPLICIT GRID SYSTEM (Bypass Tailwind) */
+    .dashboard-layout-grid {
+        display: grid;
+        grid-template-columns: 1fr; /* Mobile Default */
+        gap: 1.5rem;
+        width: 100%;
+    }
+    
+    @media (min-width: 1024px) {
+        .dashboard-layout-grid {
+            grid-template-columns: 2fr 1fr; /* 66% Scanner, 33% History */
+            display: grid !important; /* Force it */
+        }
+    }
 </style>
 {% endblock %}
 
@@ -132,9 +147,10 @@
         </div>
     </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- MAIN CONTENT GRID (Custom CSS) -->
+    <div class="dashboard-layout-grid">
         <!-- Main Scanner Area (Control Panel) -->
-        <div class="md:col-span-2 space-y-6">
+        <div class="space-y-6">
             
             <!-- Input Card -->
             <div class="card border border-border bg-card overflow-hidden">
@@ -215,7 +231,7 @@
         </div>
 
          <!-- Right Sidebar: History -->
-        <div class="md:col-span-1 space-y-6">
+        <div class="space-y-6">
             <div class="card p-0 border border-border bg-card overflow-hidden">
                 <div class="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
                     <h3 class="font-bold text-sm uppercase tracking-wide text-muted-foreground">Recent Scans</h3>
@@ -271,11 +287,11 @@
             <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-[#1a1a1a] z-10 shadow-sm">
                     <tr class="text-xs text-gray-400 uppercase font-mono border-b border-[#333]">
-                        <th class="p-4 w-[8%] bg-[#252526]">Severity</th>
-                        <th class="p-4 w-[12%] bg-[#252526]">Type</th>
-                        <th class="p-4 w-[25%] bg-[#252526]">File</th>
-                        <th class="p-4 w-[5%] bg-[#252526]">Line</th>
-                        <th class="p-4 w-[50%] bg-[#252526]">Description</th>
+                        <th class="p-4 bg-[#252526]" style="width: 8% !important;">Severity</th>
+                        <th class="p-4 bg-[#252526]" style="width: 12% !important;">Type</th>
+                        <th class="p-4 bg-[#252526]" style="width: 20% !important;">File</th>
+                        <th class="p-4 bg-[#252526]" style="width: 5% !important;">Line</th>
+                        <th class="p-4 bg-[#252526]" style="width: 55% !important;">Description</th>
                     </tr>
                 </thead>
                 <tbody id="findingsTableBody" class="text-sm font-mono text-gray-300 divide-y divide-[#333]">
