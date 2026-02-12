@@ -28,4 +28,4 @@ zipp>=3.19.1
 
 # GitHub App Integration
 PyJWT>=2.8.0
-cryptography>=41.0.0
+cryptography>=46.0.5
