@@ -345,6 +345,108 @@ def quick_scan(args):
         sys.exit(1)
 
 
+def repo_scan(args):
+    """Scan a GitHub repository."""
+    console.print(f"[cyan]Cloning and scanning repository: {args.url}[/cyan]")
+    
+    try:
+        response = requests.post(
+            f"{args.api_url}/api/v1/scan/repo/",
+            headers=get_headers(),
+            json={
+                'repo_url': args.url,
+                'mode': args.mode
+            },
+            timeout=300
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if args.output == 'json':
+            print(json.dumps(result, indent=2))
+        else:
+            console.print(f"[green]Scan completed![/green]")
+            console.print(f"Status: {result.get('status', 'unknown')}")
+            console.print(f"Files scanned: {result.get('files_scanned', 0)}")
+            
+            findings = result.get('findings', [])
+            if findings:
+                console.print(f"\n[red]Found {len(findings)} vulnerabilities:[/red]")
+                for f in findings[:10]:
+                    console.print(f"  [{f.get('severity')}] {f.get('type')} in {f.get('file')}")
+            else:
+                console.print("[green]No vulnerabilities found![/green]")
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]API Error: {e}[/red]")
+        sys.exit(1)
+
+
+def github_auth(args):
+    """GitHub OAuth - login or link account."""
+    client_id = os.environ.get('GITHUB_CLIENT_ID')
+    client_secret = os.environ.get('GITHUB_CLIENT_SECRET')
+    
+    if not client_id or not client_secret:
+        console.print("[red]Error: GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be set[/red]")
+        console.print("[yellow]Set them with: export GITHUB_CLIENT_ID=xxx GITHUB_CLIENT_SECRET=yyy[/yellow]")
+        sys.exit(1)
+    
+    if args.action == 'login':
+        console.print("[cyan]Starting GitHub OAuth login...[/cyan]")
+        console.print(f"[yellow]Visit this URL to authorize:[/yellow]")
+        console.print(f"  https://github.com/login/oauth/authorize?client_id={client_id}&scope=read:user+user:email")
+        console.print(f"\n[cyan]Then run:[/cyan]")
+        console.print(f"  vulnrix github --action callback --code YOUR_CODE")
+    
+    elif args.action == 'callback':
+        if not args.code:
+            console.print("[red]Error: --code required for callback[/red]")
+            sys.exit(1)
+        
+        console.print("[cyan]Exchanging code for token...[/cyan]")
+        
+        token_response = requests.post(
+            "https://github.com/login/oauth/access_token",
+            headers={"Accept": "application/json"},
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": args.code,
+            },
+            timeout=10
+        )
+        
+        if token_response.status_code != 200:
+            console.print(f"[red]Token exchange failed: {token_response.text}[/red]")
+            sys.exit(1)
+        
+        token_data = token_response.json()
+        access_token = token_data.get('access_token')
+        
+        if not access_token:
+            console.print("[red]No access token received[/red]")
+            sys.exit(1)
+        
+        console.print(f"[green]Authenticated successfully![/green]")
+        console.print(f"[yellow]Access token: {access_token[:10]}...[/yellow]")
+        console.print("[cyan]Use this token with the API for authenticated requests.[/cyan]")
+        
+        if args.save_token:
+            with open('.github_token', 'w') as f:
+                f.write(access_token)
+            console.print("[green]Token saved to .github_token[/green]")
+    
+    elif args.action == 'link':
+        console.print("[cyan]Linking GitHub account...[/cyan]")
+        console.print(f"[yellow]Visit:[/yellow]")
+        console.print(f"  https://github.com/login/oauth/authorize?client_id={client_id}&scope=read:user+user:email+repo")
+        console.print(f"\n[cyan]Then run:[/cyan]")
+        console.print(f"  vulnrix github --action callback --code YOUR_CODE --save-token")
+
+
 def release(args):
     """Release: update version in README and push to git."""
     version = args.version
@@ -567,6 +669,17 @@ def main():
     release_parser.add_argument('--message', '-m', help='Release message')
     release_parser.add_argument('--dry-run', action='store_true', help='Show what would be done without pushing')
     
+    # Repo scan
+    repo_parser = subparsers.add_parser('repo', help='Scan a GitHub repository')
+    repo_parser.add_argument('--url', '-u', required=True, help='Repository URL (e.g., https://github.com/user/repo)')
+    repo_parser.add_argument('--mode', '-m', choices=['fast', 'hybrid', 'deep'], default='hybrid', help='Scan mode')
+    
+    # GitHub OAuth
+    github_parser = subparsers.add_parser('github', help='GitHub OAuth authentication')
+    github_parser.add_argument('--action', '-a', choices=['login', 'callback', 'link'], required=True, help='OAuth action')
+    github_parser.add_argument('--code', '-c', help='Authorization code (for callback)')
+    github_parser.add_argument('--save-token', action='store_true', help='Save token to file')
+    
     # Version
     parser.add_argument('--version', action='version', version='VULNRIX CLI 2.0.0')
     
@@ -583,6 +696,8 @@ def main():
         console.print("  vulnrix ip --address 1.2.3.4")
         console.print("  vulnrix username --handle johndoe")
         console.print("  vulnrix quick --value user@example.com")
+        console.print("  vulnrix repo --url https://github.com/user/repo")
+        console.print("  vulnrix github --action login")
         console.print("  vulnrix release --version 1.0.0 --message 'New features'")
         sys.exit(0)
     
@@ -604,6 +719,10 @@ def main():
         quick_scan(args)
     elif args.command == 'release':
         release(args)
+    elif args.command == 'repo':
+        repo_scan(args)
+    elif args.command == 'github':
+        github_auth(args)
 
 
 if __name__ == '__main__':

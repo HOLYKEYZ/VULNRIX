@@ -145,6 +145,13 @@ python cli/vulnrix.py username --handle johndoe
 # Quick scan (auto-detect type)
 python cli/vulnrix.py quick --value user@example.com
 
+# Repository scan (clone and scan GitHub repo)
+python cli/vulnrix.py repo --url https://github.com/user/repo --mode hybrid
+
+# GitHub OAuth
+python cli/vulnrix.py github --action login
+python cli/vulnrix.py github --action callback --code CODE --save-token
+
 # Release: update version and push
 python cli/vulnrix.py release --version 1.0.0 --message "New features"
 ```
@@ -159,6 +166,8 @@ python cli/vulnrix.py release --version 1.0.0 --message "New features"
 | `--dry-run` | Show release without pushing (release command) |
 
 Set API key: `export VULNRIX_API_KEY=your_key`
+
+GitHub OAuth: `export GITHUB_CLIENT_ID=xxx GITHUB_CLIENT_SECRET=yyy`
 
 ---
 
