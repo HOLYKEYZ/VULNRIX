@@ -173,3 +173,6 @@ Set API key: `export VULNRIX_API_KEY=your_key`
 **GPLv2**
 GNU GENERAL PUBLIC LICENSE
 Version 2 License
+
+
+NOTE: THIS IS JUST A PROJECT
