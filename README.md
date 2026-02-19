@@ -101,6 +101,67 @@ gunicorn digitalshield.wsgi:application
 
 ---
 
+## CLI
+
+Run scans directly from terminal:
+
+```bash
+# Install
+pip install -r requirements.txt
+
+# Make executable
+chmod +x cli/vulnrix.py
+
+# Or run with python
+python cli/vulnrix.py --help
+```
+
+### Commands
+
+```bash
+# OSINT scan
+python cli/vulnrix.py osint --email user@example.com
+python cli/vulnrix.py osint --username johndoe
+python cli/vulnrix.py osint --domain example.com
+
+# Code vulnerability scan
+python cli/vulnrix.py code --path ./src --mode deep
+
+# Breach check
+python cli/vulnrix.py breach --value user@example.com
+
+# Phone scan
+python cli/vulnrix.py phone --number +1234567890
+
+# Domain scan
+python cli/vulnrix.py domain --name example.com
+
+# IP scan
+python cli/vulnrix.py ip --address 1.2.3.4
+
+# Username scan
+python cli/vulnrix.py username --handle johndoe
+
+# Quick scan (auto-detect type)
+python cli/vulnrix.py quick --value user@example.com
+
+# Release: update version and push
+python cli/vulnrix.py release --version 1.0.0 --message "New features"
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--api-url` | API endpoint (default: http://localhost:8000) |
+| `--output, -o` | Output format: text, json, sarif |
+| `--fail-on` | Exit with error if findings >= severity (code scan) |
+| `--dry-run` | Show release without pushing (release command) |
+
+Set API key: `export VULNRIX_API_KEY=your_key`
+
+---
+
 ## Author
 
 **Joseph Ayanda (HOLYKEYZ)**

@@ -3,41 +3,51 @@
 VULNRIX CLI - Command Line Interface for VULNRIX Security Scanner.
 
 Usage:
-    vulnrix scan --type osint --email user@example.com
-    vulnrix scan --type code --path ./src --mode deep
-    vulnrix breach --type password --value "password123"
-    vulnrix monitor --email user@example.com --interval 24h
+    vulnrix osint --email user@example.com
+    vulnrix code --path ./src --mode deep
+    vulnrix breach --value "password123"
+    vulnrix phone --number +1234567890
+    vulnrix domain --name example.com
+    vulnrix ip --address 1.2.3.4
+    vulnrix username --handle johndoe
+    vulnrix release --version 1.0.0
 """
 
 import argparse
 import json
 import os
 import sys
-import requests
+import subprocess
 from pathlib import Path
 
+import requests
+from rich.console import Console
+from rich.table import Table
+from rich import print as rprint
 
-# Configuration
-DEFAULT_API_URL = os.environ.get('VULNRIX_URL', 'https://api.vulnrix.com')
+console = Console()
+
+
+DEFAULT_API_URL = os.environ.get('VULNRIX_URL', 'http://localhost:8000')
 API_KEY = os.environ.get('VULNRIX_API_KEY', '')
 
 
 def get_headers():
     """Get API request headers."""
     if not API_KEY:
-        print(" Error: VULNRIX_API_KEY environment variable not set")
-        print("   Set it with: export VULNRIX_API_KEY=your_api_key")
-        sys.exit(1)
+        console.print("[yellow]Warning: VULNRIX_API_KEY not set. Some features may not work.[/yellow]")
     
-    return {
-        'X-API-Key': API_KEY,
+    headers = {
         'Content-Type': 'application/json'
     }
+    if API_KEY:
+        headers['X-API-Key'] = API_KEY
+    return headers
 
 
 def osint_scan(args):
     """Run OSINT scan."""
-    print(f" Starting OSINT scan...")
+    console.print(f"[cyan]Starting OSINT scan...[/cyan]")
     
     targets = {}
     if args.email:
@@ -50,7 +60,7 @@ def osint_scan(args):
         targets['domain'] = args.domain
     
     if not targets:
-        print(" Error: At least one target (--email, --name, --username, --domain) required")
+        console.print("[red]Error: At least one target (--email, --name, --username, --domain) required[/red]")
         sys.exit(1)
     
     payload = {
@@ -79,21 +89,20 @@ def osint_scan(args):
         return result
         
     except requests.exceptions.RequestException as e:
-        print(f" API Error: {e}")
+        console.print(f"[red]API Error: {e}[/red]")
         sys.exit(1)
 
 
 def code_scan(args):
     """Run code vulnerability scan."""
-    print(f" Starting code scan on {args.path}...")
+    console.print(f"[cyan]Starting code scan on {args.path}...[/cyan]")
     
     scan_path = Path(args.path)
     
     if not scan_path.exists():
-        print(f" Error: Path not found: {args.path}")
+        console.print(f"[red]Error: Path not found: {args.path}[/red]")
         sys.exit(1)
     
-    # Collect files to scan
     extensions = {'.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.go', '.rb', '.php', '.c', '.cpp', '.cs'}
     files = []
     
@@ -103,8 +112,8 @@ def code_scan(args):
         for ext in extensions:
             files.extend(scan_path.rglob(f'*{ext}'))
     
-    files = files[:100]  # Limit to 100 files
-    print(f" Found {len(files)} files to scan")
+    files = files[:100]
+    console.print(f"[green]Found {len(files)} files to scan[/green]")
     
     all_findings = []
     
@@ -113,7 +122,7 @@ def code_scan(args):
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 code = f.read()
             
-            print(f"   Scanning: {file_path}")
+            console.print(f"  Scanning: {file_path}")
             
             response = requests.post(
                 f"{args.api_url}/api/v1/code/scan",
@@ -134,9 +143,8 @@ def code_scan(args):
                         all_findings.append(finding)
             
         except Exception as e:
-            print(f"    Error scanning {file_path}: {e}")
+            console.print(f"  [yellow]Error scanning {file_path}: {e}[/yellow]")
     
-    # Build result
     result = {
         'status': 'VULNERABLE' if all_findings else 'SAFE',
         'files_scanned': len(files),
@@ -156,7 +164,6 @@ def code_scan(args):
     else:
         print_code_summary(result)
     
-    # Exit with error if findings exceed threshold
     if args.fail_on:
         severity_order = {'critical': 4, 'high': 3, 'medium': 2, 'low': 1}
         threshold = severity_order.get(args.fail_on.lower(), 3)
@@ -175,14 +182,16 @@ def code_scan(args):
 
 def breach_check(args):
     """Check for password/email breaches."""
-    print(f" Checking {args.type} for breaches...")
+    console.print(f"[cyan]Checking breach for: {args.value}[/cyan]")
+    
+    check_type = 'password' if '@' not in args.value else 'email'
     
     try:
         response = requests.post(
             f"{args.api_url}/api/v1/breach/check",
             headers=get_headers(),
             json={
-                'type': args.type,
+                'type': check_type,
                 'value': args.value
             },
             timeout=30
@@ -194,59 +203,282 @@ def breach_check(args):
             print(json.dumps(result, indent=2))
         else:
             if result.get('found'):
-                print(f" EXPOSED: Found in {result.get('count', 0):,} breaches!")
+                console.print(f"[red]EXPOSED: Found in {result.get('count', 0):,} breaches![/red]")
             else:
-                print(" Not found in known breaches")
+                console.print("[green]Not found in known breaches[/green]")
         
         return result
         
     except requests.exceptions.RequestException as e:
-        print(f" API Error: {e}")
+        console.print(f"[red]API Error: {e}[/red]")
         sys.exit(1)
+
+
+def phone_scan(args):
+    """Scan phone number."""
+    console.print(f"[cyan]Scanning phone: {args.number}[/cyan]")
+    
+    try:
+        response = requests.post(
+            f"{args.api_url}/api/v1/scan/phone",
+            headers=get_headers(),
+            json={'phone': args.number},
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if args.output == 'json':
+            print(json.dumps(result, indent=2))
+        else:
+            print_phone_summary(result)
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]API Error: {e}[/red]")
+        sys.exit(1)
+
+
+def domain_scan(args):
+    """Scan domain."""
+    console.print(f"[cyan]Scanning domain: {args.name}[/cyan]")
+    
+    try:
+        response = requests.post(
+            f"{args.api_url}/api/v1/scan/domain",
+            headers=get_headers(),
+            json={'domain': args.name},
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if args.output == 'json':
+            print(json.dumps(result, indent=2))
+        else:
+            print_domain_summary(result)
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]API Error: {e}[/red]")
+        sys.exit(1)
+
+
+def ip_scan(args):
+    """Scan IP address."""
+    console.print(f"[cyan]Scanning IP: {args.address}[/cyan]")
+    
+    try:
+        response = requests.post(
+            f"{args.api_url}/api/v1/scan/ip",
+            headers=get_headers(),
+            json={'ip': args.address},
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if args.output == 'json':
+            print(json.dumps(result, indent=2))
+        else:
+            print_ip_summary(result)
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]API Error: {e}[/red]")
+        sys.exit(1)
+
+
+def username_scan(args):
+    """Scan username across social media."""
+    console.print(f"[cyan]Scanning username: {args.handle}[/cyan]")
+    
+    try:
+        response = requests.post(
+            f"{args.api_url}/api/v1/scan/username",
+            headers=get_headers(),
+            json={'username': args.handle},
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if args.output == 'json':
+            print(json.dumps(result, indent=2))
+        else:
+            print_username_summary(result)
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]API Error: {e}[/red]")
+        sys.exit(1)
+
+
+def quick_scan(args):
+    """Quick scan - auto-detect type."""
+    console.print(f"[cyan]Running quick scan on: {args.value}[/cyan]")
+    
+    try:
+        response = requests.post(
+            f"{args.api_url}/api/v1/scan/quick",
+            headers=get_headers(),
+            json={'value': args.value},
+            timeout=120
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if args.output == 'json':
+            print(json.dumps(result, indent=2))
+        else:
+            console.print(f"[green]Detected type: {result.get('detected_type', 'unknown')}[/green]")
+            console.print(f"[cyan]Risk Score: {result.get('risk_score', 0)}/100[/cyan]")
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]API Error: {e}[/red]")
+        sys.exit(1)
+
+
+def release(args):
+    """Release: update version in README and push to git."""
+    version = args.version
+    message = args.message or f"Release v{version}"
+    
+    console.print(f"[cyan]Preparing release v{version}...[/cyan]")
+    
+    readme_path = Path("README.md")
+    if not readme_path.exists():
+        console.print("[red]README.md not found![/red]")
+        sys.exit(1)
+    
+    console.print("[green]Updating README.md...[/green]")
+    readme_content = readme_path.read_text(encoding='utf-8')
+    
+    version_pattern = r'v?\d+\.\d+\.\d+'
+    import re
+    readme_content = re.sub(version_pattern, f'v{version}', readme_content)
+    
+    if '## Release' not in readme_content:
+        readme_content += f"""
+
+---
+
+## Release v{version}
+
+### Changelog
+- {message}
+
+"""
+    
+    readme_path.write_text(readme_content, encoding='utf-8')
+    console.print(f"[green]Version updated to v{version}[/green]")
+    
+    if not args.dry_run:
+        console.print("[cyan]Staging changes...[/cyan]")
+        subprocess.run(['git', 'add', 'README.md'], check=True)
+        
+        console.print("[cyan]Creating commit...[/cyan]")
+        subprocess.run(['git', 'commit', '-m', f'Release v{version}: {message}'], check=True)
+        
+        console.print("[cyan]Pushing to remote...[/cyan]")
+        subprocess.run(['git', 'push'], check=True)
+        
+        console.print(f"[green]Successfully released v{version}![/green]")
+    else:
+        console.print(f"[yellow]Dry run - nothing committed[/yellow]")
 
 
 def print_osint_summary(result):
     """Print formatted OSINT results."""
-    print("\n" + "="*60)
-    print(" OSINT Scan Results")
-    print("="*60)
-    print(f"Risk Score: {result.get('risk_score', 0)}/100")
+    console.print("\n" + "="*60)
+    console.print("[bold]OSINT Scan Results[/bold]")
+    console.print("="*60)
+    console.print(f"Risk Score: {result.get('risk_score', 0)}/100")
     
     findings = result.get('findings', {})
     
     if 'email' in findings:
         breaches = findings['email'].get('breaches', {})
-        print(f"\n Email Analysis:")
-        print(f"   Breaches found: {len(breaches.get('breaches', []))}")
+        console.print(f"\n[bold]Email Analysis:[/bold]")
+        console.print(f"  Breaches found: {len(breaches.get('breaches', []))}")
     
     if 'username' in findings:
-        print(f"\n Username Analysis:")
+        console.print(f"\n[bold]Username Analysis:[/bold]")
         social = findings['username'].get('social_media', {})
-        print(f"   Social accounts found: {len(social)}")
+        console.print(f"  Social accounts found: {len(social)}")
     
-    print("\n" + "="*60)
+    console.print("\n" + "="*60)
 
 
 def print_code_summary(result):
     """Print formatted code scan results."""
-    print("\n" + "="*60)
-    print(" Code Scan Results")
-    print("="*60)
-    print(f"Status: {result['status']}")
-    print(f"Files scanned: {result['files_scanned']}")
-    print(f"\nFindings:")
-    print(f"   Critical: {result['summary']['critical']}")
-    print(f"   High:     {result['summary']['high']}")
-    print(f"   Medium:   {result['summary']['medium']}")
-    print(f"   Low:      {result['summary']['low']}")
+    console.print("\n" + "="*60)
+    console.print("[bold]Code Scan Results[/bold]")
+    console.print("="*60)
+    console.print(f"Status: {result['status']}")
+    console.print(f"Files scanned: {result['files_scanned']}")
+    console.print(f"\nFindings:")
+    console.print(f"  [red]Critical:[/red] {result['summary']['critical']}")
+    console.print(f"  [red]High:[/red]     {result['summary']['high']}")
+    console.print(f"  [yellow]Medium:[/yellow]   {result['summary']['medium']}")
+    console.print(f"  [blue]Low:[/blue]      {result['summary']['low']}")
     
     if result['findings']:
-        print("\n Top Findings:")
+        console.print("\n[bold]Top Findings:[/bold]")
         for finding in result['findings'][:5]:
             sev = finding.get('severity', 'Unknown')
-            print(f"   [{sev}] {finding.get('type', 'Unknown')} in {finding.get('file', 'unknown')}:{finding.get('line', 0)}")
+            console.print(f"  [{sev}] {finding.get('type', 'Unknown')} in {finding.get('file', 'unknown')}:{finding.get('line', 0)}")
     
-    print("="*60)
+    console.print("="*60)
+
+
+def print_phone_summary(result):
+    """Print phone scan results."""
+    console.print("\n[bold]Phone Scan Results[/bold]")
+    if result.get('valid'):
+        console.print(f"[green]Valid: Yes[/green]")
+        console.print(f"Carrier: {result.get('carrier', 'Unknown')}")
+        console.print(f"Location: {result.get('location', 'Unknown')}")
+    else:
+        console.print("[yellow]Could not validate phone number[/yellow]")
+
+
+def print_domain_summary(result):
+    """Print domain scan results."""
+    console.print("\n[bold]Domain Scan Results[/bold]")
+    console.print(f"Registrar: {result.get('registrar', 'Unknown')}")
+    console.print(f"Created: {result.get('creation_date', 'Unknown')}")
+    if result.get('dns_records'):
+        console.print(f"DNS Records: {len(result['dns_records'])} found")
+
+
+def print_ip_summary(result):
+    """Print IP scan results."""
+    console.print("\n[bold]IP Scan Results[/bold]")
+    console.print(f"ASN: {result.get('asn', 'Unknown')}")
+    console.print(f"Country: {result.get('country', 'Unknown')}")
+    console.print(f"ISP: {result.get('isp', 'Unknown')}")
+
+
+def print_username_summary(result):
+    """Print username scan results."""
+    console.print("\n[bold]Username Scan Results[/bold]")
+    accounts = result.get('accounts', [])
+    if accounts:
+        table = Table(title="Found Accounts")
+        table.add_column("Platform")
+        table.add_column("URL")
+        for acc in accounts:
+            table.add_row(acc.get('platform', 'Unknown'), acc.get('url', 'N/A'))
+        console.print(table)
+    else:
+        console.print("[yellow]No accounts found[/yellow]")
 
 
 def to_sarif(result):
@@ -282,13 +514,7 @@ def to_sarif(result):
 def main():
     parser = argparse.ArgumentParser(
         description='VULNRIX Security Scanner CLI',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  vulnrix scan --type osint --email user@example.com
-  vulnrix scan --type code --path ./src --mode deep --fail-on high
-  vulnrix breach --type password --value "password123"
-        """
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     parser.add_argument('--api-url', default=DEFAULT_API_URL, help='VULNRIX API URL')
@@ -296,27 +522,50 @@ Examples:
     
     subparsers = parser.add_subparsers(dest='command', help='Commands')
     
-    # Scan command
-    scan_parser = subparsers.add_parser('scan', help='Run security scan')
-    scan_parser.add_argument('--type', '-t', choices=['osint', 'code'], required=True, help='Scan type')
+    # OSINT
+    osint_parser = subparsers.add_parser('osint', help='OSINT scan (email, name, username, domain)')
+    osint_parser.add_argument('--email', '-e', help='Email to scan')
+    osint_parser.add_argument('--name', '-n', help='Name to scan')
+    osint_parser.add_argument('--username', '-u', help='Username to scan')
+    osint_parser.add_argument('--domain', '-d', help='Domain to scan')
+    osint_parser.add_argument('--no-darkweb', action='store_true', help='Skip dark web scan')
+    osint_parser.add_argument('--no-social', action='store_true', help='Skip social media scan')
     
-    # OSINT options
-    scan_parser.add_argument('--email', '-e', help='Email to scan')
-    scan_parser.add_argument('--name', '-n', help='Name to scan')
-    scan_parser.add_argument('--username', '-u', help='Username to scan')
-    scan_parser.add_argument('--domain', '-d', help='Domain to scan')
-    scan_parser.add_argument('--no-darkweb', action='store_true', help='Skip dark web scan')
-    scan_parser.add_argument('--no-social', action='store_true', help='Skip social media scan')
+    # Code scan
+    code_parser = subparsers.add_parser('code', help='Code vulnerability scan')
+    code_parser.add_argument('--path', '-p', default='.', help='Path to scan')
+    code_parser.add_argument('--mode', '-m', choices=['fast', 'hybrid', 'deep'], default='hybrid', help='Scan mode')
+    code_parser.add_argument('--fail-on', choices=['critical', 'high', 'medium', 'low'], help='Fail on severity')
     
-    # Code scan options
-    scan_parser.add_argument('--path', '-p', default='.', help='Path to scan')
-    scan_parser.add_argument('--mode', '-m', choices=['fast', 'hybrid', 'deep'], default='hybrid', help='Scan mode')
-    scan_parser.add_argument('--fail-on', choices=['critical', 'high', 'medium', 'low'], help='Fail on severity')
-    
-    # Breach command
+    # Breach
     breach_parser = subparsers.add_parser('breach', help='Check for breaches')
-    breach_parser.add_argument('--type', '-t', choices=['password', 'email'], required=True, help='Check type')
-    breach_parser.add_argument('--value', '-v', required=True, help='Value to check')
+    breach_parser.add_argument('--value', '-v', required=True, help='Value to check (email or password)')
+    
+    # Phone
+    phone_parser = subparsers.add_parser('phone', help='Scan phone number')
+    phone_parser.add_argument('--number', '-n', required=True, help='Phone number to scan')
+    
+    # Domain
+    domain_parser = subparsers.add_parser('domain', help='Scan domain')
+    domain_parser.add_argument('--name', '-n', required=True, help='Domain to scan')
+    
+    # IP
+    ip_parser = subparsers.add_parser('ip', help='Scan IP address')
+    ip_parser.add_argument('--address', '-a', required=True, help='IP address to scan')
+    
+    # Username
+    username_parser = subparsers.add_parser('username', help='Scan username across social media')
+    username_parser.add_argument('--handle', '-u', required=True, help='Username to scan')
+    
+    # Quick scan
+    quick_parser = subparsers.add_parser('quick', help='Quick scan - auto-detect type')
+    quick_parser.add_argument('--value', '-v', required=True, help='Value to scan')
+    
+    # Release
+    release_parser = subparsers.add_parser('release', help='Release: update README version and push')
+    release_parser.add_argument('--version', '-v', required=True, help='Version number (e.g., 1.0.0)')
+    release_parser.add_argument('--message', '-m', help='Release message')
+    release_parser.add_argument('--dry-run', action='store_true', help='Show what would be done without pushing')
     
     # Version
     parser.add_argument('--version', action='version', version='VULNRIX CLI 2.0.0')
@@ -325,21 +574,36 @@ Examples:
     
     if not args.command:
         parser.print_help()
+        console.print("\n[bold]Examples:[/bold]")
+        console.print("  vulnrix osint --email user@example.com")
+        console.print("  vulnrix code --path ./src --mode deep")
+        console.print("  vulnrix breach --value password123")
+        console.print("  vulnrix phone --number +1234567890")
+        console.print("  vulnrix domain --name example.com")
+        console.print("  vulnrix ip --address 1.2.3.4")
+        console.print("  vulnrix username --handle johndoe")
+        console.print("  vulnrix quick --value user@example.com")
+        console.print("  vulnrix release --version 1.0.0 --message 'New features'")
         sys.exit(0)
     
-    # Copy api_url to args for all commands
-    if hasattr(args, 'api_url'):
-        pass
-    else:
-        args.api_url = DEFAULT_API_URL
-    
-    if args.command == 'scan':
-        if args.type == 'osint':
-            osint_scan(args)
-        else:
-            code_scan(args)
+    if args.command == 'osint':
+        osint_scan(args)
+    elif args.command == 'code':
+        code_scan(args)
     elif args.command == 'breach':
         breach_check(args)
+    elif args.command == 'phone':
+        phone_scan(args)
+    elif args.command == 'domain':
+        domain_scan(args)
+    elif args.command == 'ip':
+        ip_scan(args)
+    elif args.command == 'username':
+        username_scan(args)
+    elif args.command == 'quick':
+        quick_scan(args)
+    elif args.command == 'release':
+        release(args)
 
 
 if __name__ == '__main__':
