@@ -49,22 +49,22 @@ python manage.py runserver
 ## API Keys Required
 
 ```env
-# AI Providers (for Hybrid mode - 2 keys recommended)
-GROQ_KEY=                # Primary AI (fast)
-GROQ2_API_KEY=           # Fallback AI 1
-GEMINI_API_KEY=          # Fallback AI 2
-GEMINI2_API_KEY=         # Fallback AI 3
+# AI Providers (for Hybrid mode - 2 keys recommended for robust verification)
+GROQ_KEY=                # Primary AI for vulnerability verification (fast)
+GROQ2_API_KEY=           # Fallback AI 1 for vulnerability verification
+GEMINI_API_KEY=          # Fallback AI 2 for vulnerability verification
+GEMINI2_API_KEY=         # Fallback AI 3 for vulnerability verification
 
-# OSINT APIs
-INTELX2_API_KEY=         # Primary OSINT (Darkweb, BTC, IPFS)
-INTELX_API_KEY=          # Fallback
-VIRUS_TOTAL_API_KEY=     # Malware scanning
-LEAKINSIGHT_API_KEY=     # Breach checking
+# OSINT APIs (for digital footprint scanning features)
+INTELX2_API_KEY=         # Primary OSINT for Darkweb, BTC, IPFS scanning
+INTELX_API_KEY=          # Fallback OSINT for Darkweb, BTC, IPFS scanning
+VIRUS_TOTAL_API_KEY=     # For file malware scanning integration
+LEAKINSIGHT_API_KEY=     # For breach checking and Dark Web monitoring
 
-# Optional
-SHODAN_API_KEY=
-GOOGLE_API_KEY=
-SECURITY_TRAILS_API_KEY=
+# Optional OSINT APIs (enhance digital footprint analysis)
+SHODAN_API_KEY=          # For advanced IP/domain reconnaissance (e.g., port scanning, banner grabbing)
+GOOGLE_API_KEY=          # Potentially for specific search integrations or lookups
+SECURITY_TRAILS_API_KEY= # For domain and IP historical data and relationships
 ```
 
 ---
