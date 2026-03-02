@@ -184,4 +184,4 @@ GNU GENERAL PUBLIC LICENSE
 Version 2 License
 
 
-NOTE: THIS IS JUST A PROJECT
+note: this is just a project.
