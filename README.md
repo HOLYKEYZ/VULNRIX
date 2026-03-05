@@ -38,6 +38,8 @@ python -m venv .venv
 # source .venv/bin/activate  # Linux/Mac
 
 pip install -r requirements.txt
+# The .env file is used to load environment variables necessary for the application.
+# Copying .env.example to .env allows you to set your API keys and other configurations.
 cp .env.example .env  # Add your API keys
 
 python manage.py migrate
