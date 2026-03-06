@@ -39,8 +39,9 @@ python -m venv .venv
 
 pip install -r requirements.txt
 # The .env file is used to load environment variables necessary for the application.
-# Copying .env.example to .env allows you to set your API keys and other configurations.
-cp .env.example .env  # Add your API keys
+# Create a new .env file and add your API keys and other configurations as shown below:
+# Refer to the 'API Keys Required' section for the content to place inside .env.
+touch .env  # Create a new .env file
 
 python manage.py migrate
 python manage.py runserver
