@@ -168,8 +168,10 @@ python cli/vulnrix.py release --version 1.0.0 --message "New features"
 | `--fail-on` | Exit with error if findings >= severity (code scan) |
 | `--dry-run` | Show release without pushing (release command) |
 
-Set API key: `export VULNRIX_API_KEY=your_key`
+Unlike the main Django application, which loads environment variables from a `.env` file, the CLI requires these variables to be explicitly set in the active shell session. To do this, use the `export` command as shown below:
 
+Set API key: `export VULNRIX_API_KEY=your_key`
+GitHub OAuth: `export GITHUB_CLIENT_ID=xxx GITHUB_CLIENT_SECRET=yyy`
 GitHub OAuth: `export GITHUB_CLIENT_ID=xxx GITHUB_CLIENT_SECRET=yyy`
 
 ---
