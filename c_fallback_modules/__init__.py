@@ -185,7 +185,7 @@ def hibp_email_check(email: str, api_key: str = None) -> dict:
     import requests
     import os
     
-    api_key = api_key or os.getenv('HIBP_API_KEY')
+    api_key = api_key or 
     if not api_key:
         return {
             'breaches': [],
