@@ -61,7 +61,7 @@ def api_health_api(request):
     # Check all configured APIs
     apis = [
         # OSINT Scanner APIs
-        'google_search', 'intelx', 'grok', 'leakinsight', 'leak_lookup',
+        'google_search', 'intelx', 'groq',
         'virustotal', 'shodan', 'pulsedive', 'whoisfreaks', 'securitytrails',
         'dymo', 'numlookup', 'veriphone',
         # Vulnerability Scanner APIs
