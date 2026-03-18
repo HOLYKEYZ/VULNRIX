@@ -65,40 +65,38 @@ class KeywordFilter:
         - risk_score (int): 0-100 score based on matches.
         """
         found_categories = set()
-        total_matches = 0
-        
-        for category, patterns in self.CATEGORIES.items():
-            for pattern in patterns:
-                if re.search(pattern, code, re.IGNORECASE):
-                    found_categories.add(category)
-                    total_matches += 1
-                    # Optimization: Don't need to count every match, just presence
-                    break
-        
-        # Risk Calculation
-        risk_score = 0
-        if "DANGEROUS_FUNC" in found_categories:
-            risk_score += 40
-        if "DATABASE" in found_categories and "USER_INPUT" in found_categories:
-            risk_score += 40
-        if "DATABASE" in found_categories:
-            risk_score += 20
-        if "CRYPTO" in found_categories:
-            risk_score += 20
-        if "FILESYSTEM" in found_categories and "USER_INPUT" in found_categories:
-            risk_score += 30
-        if "HARDCODED_SECRETS" in found_categories:
-            risk_score += 50
-        if "INJECTION" in found_categories:
-            risk_score += 35
-        if "DESERIALIZATION" in found_categories:
-            risk_score += 40
-        if "USER_INPUT" in found_categories:
-            risk_score += 10
+            for category, patterns in self.CATEGORIES.items():
+                for pattern in patterns:
+                    if re.search(pattern, code, re.IGNORECASE):
+                        found_categories.add(category)
+                        # Optimization: Don't need to count every match, just presence
+                        break
             
-        risk_score = min(risk_score, 100)
-        
-        # Threshold for LLM - always scan if any category found
+            # Risk Calculation
+            risk_score = 0
+            if "DANGEROUS_FUNC" in found_categories:
+                risk_score += 40
+            if "DATABASE" in found_categories and "USER_INPUT" in found_categories:
+                risk_score += 40
+            if "DATABASE" in found_categories:
+                risk_score += 20
+            if "CRYPTO" in found_categories:
+                risk_score += 20
+            if "FILESYSTEM" in found_categories and "USER_INPUT" in found_categories:
+                risk_score += 30
+            if "HARDCODED_SECRETS" in found_categories:
+                risk_score += 50
+            if "INJECTION" in found_categories:
+                risk_score += 35
+            if "DESERIALIZATION" in found_categories:
+                risk_score += 40
+            if "USER_INPUT" in found_categories:
+                risk_score += 10
+            
+            risk_score = min(risk_score, 100)
+            
+            # Threshold for LLM based on risk score
+            is_suspicious = risk_score >= 35
         is_suspicious = len(found_categories) > 0
         
         return is_suspicious, list(found_categories), risk_score
