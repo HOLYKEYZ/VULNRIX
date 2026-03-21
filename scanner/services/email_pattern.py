@@ -1,17 +1,10 @@
-"""
-Email pattern analysis module.
-"""
+
 from typing import Dict, Optional
+import re
 
-# Try Django services first, fallback to Flask modules
-try:
-    from scanner.services.search_engine import SearchEngine
-except ImportError:
-    try:
-        from app.scanner.modules.search_engine import SearchEngine
-    except ImportError:
-        from search_engine import SearchEngine
+from .search_engine import SearchEngine
 
+EMAIL_REGEX = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 
 class EmailPatternAnalyzer:
     """Analyzes email patterns and exposure."""
@@ -30,7 +23,7 @@ class EmailPatternAnalyzer:
         Returns:
             Dictionary with analysis results
         """
-        if not email or '@' not in email:
+        if not email or not re.match(EMAIL_REGEX, email):
             return {}
         
         local_part, domain = email.split('@', 1)
@@ -66,5 +59,7 @@ class EmailPatternAnalyzer:
         patterns['exposure_results'] = all_results[:20]
         patterns['exposure_count'] = len(all_results)
         
+        return patterns
+      
         return patterns
 
