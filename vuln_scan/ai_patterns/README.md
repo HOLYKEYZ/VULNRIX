@@ -5,7 +5,7 @@ This folder contains test samples for the AI malicious code detection module.
 ## Files
 
 - `reverse_shell_sample.py` - Example AI-generated reverse shell
-- `keylogger_sample.py` - Example AI-generated keylogger
+- `keylogger_sample.py` - Example AI-generated keylogger (keylogger_sample.py) (keylogger_sample.py)
 - `token_stealer_sample.py` - Example AI-generated credential stealer
 - `obfuscated_sample.py` - Example obfuscated malicious code
 - `safe_sample.py` - Benign code (control sample)
