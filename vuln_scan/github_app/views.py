@@ -465,22 +465,10 @@ def trigger_auto_fix(request):
         logger.error(f"Auto-fix failed: {e}")
 @login_required
 def github_dashboard(request):
-    """
-    Dedicated dashboard for GitHub integration.
-    Shows connected repos and actions.
-    """
-    from vuln_scan.web_dashboard.models import GitHubInstallation
-    from .services import github_app
-    import requests as http_requests
-
-    user_installations = GitHubInstallation.objects.filter(user=request.user)
-    
-    # Check if connected
-    connected = user_installations.exists()
-    repos_list = []
-    
-    if connected:
-        for install in user_installations:
+    """GitHub dashboard - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    return redirect(f'{frontend_url}/github')
             try:
                 token = github_app.get_installation_token(install.installation_id)
                 response = http_requests.get(

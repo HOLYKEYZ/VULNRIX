@@ -25,6 +25,10 @@ from scanner.services.breach_check import BreachChecker
 @login_required
 @require_http_methods(["GET", "POST"])
 def new_scan(request):
+    """Create a new scan - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    return redirect(f'{frontend_url}/osint')
     """Create a new scan - mirrors Flask new_scan route."""
     if request.method == 'POST':
         # Get all raw inputs first
@@ -432,42 +436,10 @@ def view_scan(request, scan_id):
 
 @login_required
 def dashboard(request):
-    """Dashboard view - mirrors Flask dashboard."""
-    from django.db.models import Count, Q
-    from datetime import datetime, timedelta
-    
-    # Get recent scans
-    recent_scans = ScanHistory.objects.filter(user=request.user).order_by('-created_at')[:10]
-    
-    # Get total scans
-    total_scans = ScanHistory.objects.filter(user=request.user).count()
-    
-    # Risk distribution
-    risk_distribution = {
-        'low': ScanHistory.objects.filter(user=request.user, risk_score__lt=30).count(),
-        'medium': ScanHistory.objects.filter(user=request.user, risk_score__gte=30, risk_score__lt=70).count(),
-        'high': ScanHistory.objects.filter(user=request.user, risk_score__gte=70).count(),
-    }
-    
-    # Exposure trends (last 30 days + today)
-    thirty_days_ago = datetime.now() - timedelta(days=30)
-    exposure_trends = []
-    for i in range(31):  # 31 to include today
-        date = thirty_days_ago + timedelta(days=i)
-        count = ScanHistory.objects.filter(
-            user=request.user,
-            created_at__date=date.date()
-        ).count()
-        exposure_trends.append({
-            'date': date.strftime('%Y-%m-%d'),
-            'count': count
-        })
-    
-    import json
-    return render(request, 'dashboard.html', {
-        'recent_scans': recent_scans,
-        'total_scans': total_scans,
-        'risk_distribution': risk_distribution,
+    """Dashboard view - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    return redirect(f'{frontend_url}/dashboard')
         'exposure_trends': json.dumps(exposure_trends)
     })
 
@@ -512,37 +484,18 @@ def dashboard_stats_api(request):
 
 @login_required
 def docs(request):
-    """Documentation page explaining the platform."""
-    return render(request, 'docs.html')
+    """Documentation page - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    return redirect(f'{frontend_url}/docs')
 
 
 @login_required
 def attack_surface(request, scan_id):
-    """Attack Surface Visualization view."""
-    from scanner.services.attack_surface import build_attack_surface
-    
-    scan = get_object_or_404(ScanHistory, id=scan_id)
-    
-    # Verify ownership
-    if scan.user != request.user:
-        messages.error(request, 'Permission denied.')
-        return redirect('scanner:dashboard')
-    
-    # Get results
-    try:
-        scan_result = scan.results
-        osint_results = {
-            'email': scan.email,
-            'name': scan.name,
-            'username': scan.username,
-            'domain': scan.domain,
-            'breach_data': scan_result.get_json_field('breach_data'),
-            'social_results': scan_result.get_json_field('social_results'),
-        }
-        # Assuming code results might be linked or relevant in future
-        code_results = None 
-        
-        graph_data = build_attack_surface(osint_results, code_results)
+    """Attack Surface Visualization view - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    return redirect(f'{frontend_url}/footprint')
         
     except ScanResult.DoesNotExist:
         messages.error(request, 'Scan results not found.')
@@ -555,5 +508,7 @@ def attack_surface(request, scan_id):
 
 @require_http_methods(["GET"])
 def docs(request):
-    """Render the documentation page."""
-    return render(request, 'docs.html')
+    """Render the documentation page - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    return redirect(f'{frontend_url}/docs')

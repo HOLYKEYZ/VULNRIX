@@ -167,11 +167,10 @@ def get_scan_history(user, limit=10):
 @login_required
 @require_http_methods(["GET", "POST"])
 def dashboard(request):
-    """
-    Main dashboard view: renders the upload interface on GET,
-    processes file upload and scan on POST.
-    """
-    if request.method == "GET":
+    """Dashboard - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    return redirect(f'{frontend_url}/dashboard')
         # Get last scan and history for display
         last_scan = get_last_scan(request.user)
         scan_history = get_scan_history(request.user, limit=10)
@@ -488,11 +487,14 @@ def get_scan_result(request, scan_id):
 @login_required
 @require_http_methods(["GET", "POST"])
 def virustotal_scan(request):
-    """VirusTotal-only file scanning for non-developers."""
-    if request.method == "GET":
-        return render(request, "vuln_scan/virustotal.html")
+    """VirusTotal-only file scanning - redirects GET to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
     
-    # POST - handle file upload
+    if request.method == "GET":
+        return redirect(f'{frontend_url}/virustotal')
+    
+    # POST - handle file upload (API endpoint)
     file = request.FILES.get("file")
     if not file:
         return JsonResponse({"error": "No file uploaded"}, status=400)
@@ -849,12 +851,12 @@ def project_file_details(request, project_id, file_id):
 @ensure_csrf_cookie
 @require_http_methods(["GET", "POST"])
 def home(request):
-    """
-    Public Welcome Page & Demo Scanner.
-    Limit: 2 scans per guest session.
-    """
+    """Home page - redirects to Next.js frontend."""
+    from django.conf import settings
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+    
     if request.method == "GET":
-        return render(request, "vuln_scan/home.html")
+        return redirect(f'{frontend_url}/')
         
     if request.method == "POST":
         try:

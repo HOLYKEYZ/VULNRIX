@@ -46,6 +46,9 @@ if os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
 # Default port for development
 DEFAULT_PORT = 5000
 
+# Next.js Frontend URL
+FRONTEND_URL = env('FRONTEND_URL', default='https://vulnrix-frontend.onrender.com')
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
