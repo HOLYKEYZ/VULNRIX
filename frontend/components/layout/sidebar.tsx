@@ -12,7 +12,7 @@ import {
   Globe,
   Clock,
   LogOut,
-  Virus,
+  Bug,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -30,7 +30,7 @@ const navigation = [
     items: [
       { name: "Code Scanner", href: "/scan", icon: Code2 },
       { name: "New Repo Scan", href: "/repo", icon: Github },
-      { name: "VirusTotal Check", href: "/virustotal", icon: Virus },
+      { name: "VirusTotal Check", href: "/virustotal", icon: Bug },
       { name: "GitHub Integration", href: "/github", icon: Github },
     ],
   },
