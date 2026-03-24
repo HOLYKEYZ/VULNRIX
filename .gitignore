@@ -51,6 +51,12 @@ db.sqlite3
 node_modules/
 npm-debug.log
 
+# Next.js
+frontend/.next/
+frontend/out/
+.next/
+out/
+
 # Django
 staticfiles/
 media/uploads/
