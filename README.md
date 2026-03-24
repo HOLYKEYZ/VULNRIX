@@ -73,12 +73,41 @@ SECURITY_TRAILS_API_KEY=
 
 ```
 VULNRIX/
+├── frontend/            # Next.js frontend (TypeScript + Tailwind + shadcn)
 ├── scanner/             # Footprint scanner
 ├── vuln_scan/           # Code vulnerability scanner
 ├── accounts/            # Authentication
+├── cli/                 # Command line interface
 ├── c_fallback_modules/  # C performance fallbacks
-└── app/templates/       # UI templates
+└── app/templates/       # Django UI templates (legacy)
 ```
+
+---
+
+## Frontend (Next.js + TypeScript)
+
+Modern React frontend with the same hacker-themed design:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Tech Stack
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - UI components (Radix primitives)
+
+### Features
+- Same dark theme with teal/cyan accents (#00d4d4)
+- Terminal-style borders and animations
+- Responsive sidebar navigation
+- Real-time scan progress
+- Charts and metrics dashboard
+
+See [frontend/README.md](frontend/README.md) for full documentation.
 
 ---
 
