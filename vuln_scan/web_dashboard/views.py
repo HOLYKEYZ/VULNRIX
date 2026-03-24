@@ -244,42 +244,6 @@ def dashboard_api(request):
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
-            result["mode"] = mode
-            if vt_result:
-                result["virustotal"] = vt_result
-            
-            # Calculate hash
-            with open(tmp_path, 'rb') as f:
-                file_hash = hashlib.sha256(f.read()).hexdigest()
-            
-            # Save history
-            save_scan_history(request.user, filename, result, mode, file_hash)
-            
-            # Calculate Grade for Frontend
-            findings = result.get('findings', [])
-            crit = len([f for f in findings if f.get('severity', '').lower() == 'critical'])
-            high = len([f for f in findings if f.get('severity', '').lower() == 'high'])
-            med = len([f for f in findings if f.get('severity', '').lower() == 'medium'])
-            low = len([f for f in findings if f.get('severity', '').lower() == 'low'])
-            
-            metrics = calculate_security_metrics(crit, high, med, low)
-            result['security_grade'] = metrics['grade']
-            result['security_score'] = metrics['score']
-            
-            return JsonResponse(result)
-
-        except Exception as e:
-            logger.error(f"[VULNRIX] Post Error: {e}")
-            logger.debug(f"Traceback: {__import__('traceback').format_exc()}")
-            return JsonResponse({
-                "status": "ERROR", 
-                "error": f"Scan failed: {str(e)}",
-                "error_code": "SCAN_ERROR"
-            }, status=500)
-        finally:
-            if tmp_path and os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-                logger.info(f"[VULNRIX] Temp file cleaned")
 
 
 def scan_with_virustotal(file_path: str, filename: str) -> dict:
