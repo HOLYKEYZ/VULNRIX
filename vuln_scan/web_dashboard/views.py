@@ -171,171 +171,79 @@ def dashboard(request):
     from django.conf import settings
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
     return redirect(f'{frontend_url}/dashboard')
-        # Get last scan and history for display
-        last_scan = get_last_scan(request.user)
-        scan_history = get_scan_history(request.user, limit=10)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def dashboard_api(request):
+    """API endpoint for dashboard scan uploads."""
+    if request.method == "GET":
+        from django.conf import settings
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
+        return redirect(f'{frontend_url}/dashboard')
+    
+    # POST handler
+    tmp_path = None
+    try:
+        logger.info("[VULNRIX] Received POST request for scan")
+        file = request.FILES.get("file")
+        mode = request.POST.get("mode", "hybrid")
         
-        # Get project scan history
-        from .models import ScanProject
-        project_history = list(ScanProject.objects.filter(user=request.user).order_by('-created_at')[:10])
-        
-        # Combine and sort all scans by created_at (newest first)
-        combined_history = []
-        for scan in scan_history:
-            combined_history.append({
-                'type': 'file',
-                'id': scan.id,
-                'name': scan.filename,
-                'status': scan.status,
-                'created_at': scan.created_at,
-                'detail': f"{scan.total_findings} issues",
-            })
-        for project in project_history:
-            combined_history.append({
-                'type': 'project',
-                'id': project.id,
-                'name': project.name,
-                'status': project.status,
-                'created_at': project.created_at,
-                'detail': f"{project.total_files} files",
-            })
-        
-        # Sort by created_at descending (newest first)
-        combined_history.sort(key=lambda x: x['created_at'], reverse=True)
-        combined_history = combined_history[:10]  # Limit to 10 total
-        
-        context = {
-            'last_scan': last_scan,
-            'scan_history': scan_history,
-            'project_history': project_history,
-            'combined_history': combined_history,
+        if not file:
+            return JsonResponse({"error": "No file uploaded"}, status=400)
+
+        # Enforce file size limits
+        size_limits = {
+            'fast': 20 * 1024 * 1024,   # 20MB
+            'hybrid': 2 * 1024 * 1024,  # 2MB
+            'deep': 1 * 1024 * 1024     # 1MB
         }
+        limit = size_limits.get(mode, 2 * 1024 * 1024)
         
-        # If last scan exists, add its findings for display
-        if last_scan:
-            context['last_findings'] = last_scan.get_findings()
-            context['last_result'] = last_scan.get_full_result()
-            
-            # Calculate Score/Grade
-            crit, high, med, low = 0, 0, 0, 0
-            try:
-                if hasattr(last_scan, 'critical_count'): # CodeScanHistory
-                    crit = last_scan.critical_count
-                    high = last_scan.high_count
-                    med = last_scan.medium_count
-                    low = last_scan.low_count
-                else: # ScanProject
-                    for f in last_scan.file_results.all():
-                        if f.severity == 'CRITICAL': crit += 1
-                        elif f.severity == 'HIGH': high += 1
-                        elif f.severity == 'MEDIUM': med += 1
-                        elif f.severity == 'LOW': low += 1
-            except Exception:
-                pass # safely fallback to 0/0/0/0 -> Grade A (100%)
-                
-            metrics = calculate_security_metrics(crit, high, med, low)
-            context['security_grade'] = metrics['grade']
-            context['security_score'] = metrics['score']
+        if file.size > limit:
+            return JsonResponse({
+                "error": f"File too large for {mode} mode. Limit is {limit/1024/1024:.1f}MB."
+            }, status=413)
+
+        filename = file.name
+        logger.info(f"[VULNRIX] File: {filename}, Mode: {mode}, Size: {file.size}")
+        ext = os.path.splitext(filename)[1]
+
+        # Create temp file
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode="w", suffix=ext, delete=False, encoding="utf-8") as tmp:
+            code = file.read().decode("utf-8", errors="ignore")
+            tmp.write(code)
+            tmp_path = tmp.name
+            logger.info(f"[VULNRIX] Saved temp file to {tmp_path}")
+
+        # Code Analysis Pipeline
+        pipeline = get_pipeline()
         
-        return render(request, "vuln_scan/dashboard_fixed.html", context)
+        if pipeline is None:
+            raise Exception("Scanner engine unavailable")
+        
+        logger.info(f"[VULNRIX] Starting pipeline scan...")
+        import time
+        start_time = time.time()
+        
+        result = pipeline.scan_file(tmp_path, mode=mode)
+        duration = time.time() - start_time
+        
+        result["scan_duration"] = round(duration, 2)
+        result["filename"] = filename
+        
+        return JsonResponse(result)
 
-    if request.method == "POST":
-        tmp_path = None
-        try:
-            logger.info("[VULNRIX] Received POST request for scan")
-            file = request.FILES.get("file")
-            mode = request.POST.get("mode", "hybrid")
-            
-            if not file:
-                return JsonResponse({"error": "No file uploaded"}, status=400)
-
-            # Enforce file size limits
-            size_limits = {
-                'fast': 20 * 1024 * 1024,   # 20MB
-                'hybrid': 2 * 1024 * 1024,  # 2MB
-                'deep': 1 * 1024 * 1024     # 1MB
-            }
-            limit = size_limits.get(mode, 2 * 1024 * 1024)
-            
-            if file.size > limit:
-                return JsonResponse({
-                    "error": f"File too large for {mode} mode. Limit is {limit/1024/1024:.1f}MB."
-                }, status=413)
-
-            filename = file.name
-            logger.info(f"[VULNRIX] File: {filename}, Mode: {mode}, Size: {file.size}")
-            ext = os.path.splitext(filename)[1]
-
-            # Create temp file
-            with tempfile.NamedTemporaryFile(mode="w", suffix=ext, delete=False, encoding="utf-8") as tmp:
-                code = file.read().decode("utf-8", errors="ignore")
-                tmp.write(code)
-                tmp_path = tmp.name
-                logger.info(f"[VULNRIX] Saved temp file to {tmp_path}")
-
-            # Define code file extensions that should NOT go to VirusTotal
-            CODE_EXTENSIONS = {
-                '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.go', '.php', '.rb',
-                '.c', '.cpp', '.h', '.hpp', '.cs', '.swift', '.kt', '.kts', '.rs',
-                '.sql', '.sh', '.bash', '.ps1', '.yaml', '.yml', '.json', '.xml',
-                '.html', '.htm', '.css', '.scss', '.sass', '.less', '.vue', '.svelte',
-                '.scala', '.groovy', '.pl', '.pm', '.lua', '.r', '.m', '.mm', '.asm',
-                '.vb', '.vbs', '.bat', '.cmd', '.psm1', '.psd1', '.tf', '.hcl',
-                '.dockerfile', '.env', '.ini', '.cfg', '.conf', '.toml', '.properties',
-                '.md', '.txt', '.rst', '.tex'
-            }
-            
-            is_code_file = ext.lower() in CODE_EXTENSIONS
-            
-            # VirusTotal Scan (for non-code)
-            vt_result = None
-            if not is_code_file:
-                try:
-                    vt_result = scan_with_virustotal(tmp_path, filename)
-                    logger.info(f"[VULNRIX] VirusTotal scan completed")
-                except Exception as vt_error:
-                    logger.warning(f"[VULNRIX] VirusTotal scan failed: {vt_error}")
-            
-            # Code Analysis Pipeline
-            pipeline = get_pipeline()
-            
-            # Retry once if pipeline fails to initialize (fixes first-scan race condition)
-            if pipeline is None:
-                logger.warning("[VULNRIX] Pipeline was None, retrying initialization...")
-                import time
-                time.sleep(0.5)
-                pipeline = get_pipeline()
-                
-            if pipeline is None:
-                raise Exception("Scanner engine unavailable (Import Error)")
-            
-            logger.info(f"[VULNRIX] Starting pipeline scan...")
-            start_time = time.time()
-            
-            # --- SNYK REMOVED (Local Engine Only) ---
-            # Snyk service deprecated in favor of hybrid local pipeline
-            logger.info("[VULNRIX] Starting pipeline scan (Local Engine)...")
-
-            
-            # --- LOCAL PIPELINE ANALYSIS ---
-            result = pipeline.scan_file(tmp_path, mode=mode)
-            duration = time.time() - start_time
-            
-            # Merge Snyk findings into result
-            if snyk_result and snyk_result.get('findings'):
-                existing_findings = result.get('findings', [])
-                snyk_findings = snyk_result.get('findings', [])
-                # Add source tag to differentiate
-                for f in snyk_findings:
-                    f['source'] = 'snyk'
-                # Prepend Snyk findings (they come first as "external validation")
-                result['findings'] = snyk_findings + existing_findings
-                result['snyk_summary'] = snyk_result.get('summary', {})
-                logger.info(f"[VULNRIX] Merged {len(snyk_findings)} Snyk findings")
-            
-            # Enrich result
-            result["scan_duration"] = round(duration, 2)
-            result["filename"] = filename
+    except Exception as e:
+        logger.error(f"[VULNRIX] Post Error: {e}")
+        return JsonResponse({
+            "status": "ERROR", 
+            "error": f"Scan failed: {str(e)}",
+        }, status=500)
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
             result["mode"] = mode
             if vt_result:
                 result["virustotal"] = vt_result
@@ -849,80 +757,9 @@ def project_file_details(request, project_id, file_id):
 
 
 @ensure_csrf_cookie
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET"])
 def home(request):
     """Home page - redirects to Next.js frontend."""
     from django.conf import settings
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
-    
-    if request.method == "GET":
-        return redirect(f'{frontend_url}/')
-        
-    if request.method == "POST":
-        try:
-            # 1. Guest Rate Limit Check
-            if not request.user.is_authenticated:
-                guest_scans = request.session.get('guest_scans', 0)
-                if guest_scans >= 2:
-                    return JsonResponse({
-                        "error": "Guest limit reached",
-                        "limit_reached": True,
-                        "guest_scans": guest_scans
-                    }, status=403)
-                
-                # Increment scan count
-                request.session['guest_scans'] = guest_scans + 1
-                request.session.modified = True
-            
-            # 2. File Upload Handling
-            file = request.FILES.get("file")
-            if not file:
-                return JsonResponse({"error": "No file uploaded"}, status=400)
-                
-            # Check Daily Limit
-            try:
-                from ..services.scan_limiter import check_and_increment_usage, DailyQuotaExceeded
-                check_and_increment_usage(request.user)
-            except DailyQuotaExceeded as e:
-                return JsonResponse({"error": str(e), "code": "DAILY_LIMIT_EXCEEDED"}, status=403)
-            
-            # Create temp file
-            temp_dir = Path(tempfile.gettempdir()) / "vulnrix_guest"
-            temp_dir.mkdir(exist_ok=True)
-            
-            # Use original filename but secure it (basic check)
-            original_name = file.name
-            safe_name = "".join(c for c in original_name if c.isalnum() or c in "._-")
-            if not safe_name: safe_name = "guest_upload.tmp"
-                
-            tmp_path = temp_dir / f"guest_{int(time.time())}_{safe_name}"
-            
-            with open(tmp_path, "wb+") as destination:
-                for chunk in file.chunks():
-                    destination.write(chunk)
-            
-            # 3. Scanning
-            pipeline = get_pipeline()
-            dispatcher = LLMDispatcher(pipeline)
-            
-            # Use 'fast' mode for public demo to save resources
-            result = dispatcher.scan_file(str(tmp_path), mode="fast")
-            
-            # Cleanup
-            try:
-                os.remove(tmp_path)
-            except:
-                pass
-            
-            guest_count = request.session.get('guest_scans', 0) if not request.user.is_authenticated else 0
-            
-            return JsonResponse({
-                "status": "success",
-                "risk_score": result.get('risk_score', 0),
-                "findings": result.get('findings', []),
-                "guest_scans": guest_count
-            })
-            
-        except Exception as e:
-            logger.error(f"Home Scan Error: {e}")
-            return JsonResponse({"error": str(e)}, status=500)
+    return redirect(f'{frontend_url}/')
