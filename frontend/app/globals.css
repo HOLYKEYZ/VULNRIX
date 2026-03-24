@@ -141,10 +141,10 @@
 }
 
 /* Utility classes matching the existing site */
-.container {
-  @apply w-full mx-auto px-4 max-w-7xl;
-}
-
-.grid {
-  @apply grid gap-6;
+.container-fluid {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
 }
