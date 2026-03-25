@@ -16,15 +16,7 @@ const nextConfig = {
       },
     ];
   },
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        '@/lib/utils': './lib/utils',
-        '@/components/lib/utils': './components/lib/utils',
-        '@/components': './components',
-      },
-    },
-  },
+  turbopack: {},
 };
 
 module.exports = nextConfig;
