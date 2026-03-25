@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "VULNRIX - Security Scanner",
   description: "AI-Powered Static Code Analysis & Digital Footprint Scanner",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
