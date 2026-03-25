@@ -469,26 +469,3 @@ def github_dashboard(request):
     from django.conf import settings
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
     return redirect(f'{frontend_url}/github')
-            try:
-                token = github_app.get_installation_token(install.installation_id)
-                response = http_requests.get(
-                    "https://api.github.com/installation/repositories",
-                    headers={
-                        "Authorization": f"Bearer {token}",
-                        "Accept": "application/vnd.github+json",
-                    },
-                    timeout=5
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    for r in data.get('repositories', []):
-                        r['installation_id'] = install.installation_id
-                        repos_list.append(r)
-            except Exception as e:
-                logger.error(f"Error fetching repos for {install}: {e}")
-
-    return render(request, 'github_app/dashboard.html', {
-        'connected': connected,
-        'repos': repos_list,
-    })
-
