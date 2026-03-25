@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Search, Code2, Github, ArrowRight } from "lucide-react";
+import { Shield, Search, Code2, Terminal, ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -65,7 +65,7 @@ export default function HomePage() {
           <Card className="terminal-border bg-black h-full hover:bg-hacker-green/5 transition-colors cursor-pointer group">
             <CardHeader>
               <div className="w-12 h-12 rounded-lg bg-hacker-green/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Github className="w-6 h-6 text-hacker-green" />
+                <Terminal className="w-6 h-6 text-hacker-green" />
               </div>
               <CardTitle className="text-hacker-green">Repo Scan</CardTitle>
             </CardHeader>

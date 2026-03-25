@@ -7,7 +7,7 @@ import {
   Shield,
   Search,
   Code2,
-  Github,
+  Terminal,
   FileCode2,
   Globe,
   Clock,
@@ -29,9 +29,9 @@ const navigation = [
     name: "DEV TOOLS",
     items: [
       { name: "Code Scanner", href: "/scan", icon: Code2 },
-      { name: "New Repo Scan", href: "/repo", icon: Github },
+      { name: "New Repo Scan", href: "/repo", icon: Terminal },
       { name: "VirusTotal Check", href: "/virustotal", icon: Bug },
-      { name: "GitHub Integration", href: "/github", icon: Github },
+      { name: "GitHub Integration", href: "/github", icon: Terminal },
     ],
   },
   {

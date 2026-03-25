@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Github,
   Link2,
   Shield,
   RefreshCw,
@@ -13,6 +12,7 @@ import {
   CheckCircle,
   Loader2,
   GitBranch,
+  Terminal,
 } from "lucide-react";
 
 interface Repo {
@@ -68,14 +68,14 @@ export default function GitHubIntegrationPage() {
         <Card className="terminal-border bg-black">
           <CardHeader className="terminal-header p-4">
             <CardTitle className="text-sm font-bold text-hacker-green uppercase tracking-wider flex items-center gap-2">
-              <Github className="w-4 h-4" /> ACCOUNT_CONNECTION
+              <Terminal className="w-4 h-4" /> ACCOUNT_CONNECTION
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             {!connected ? (
               <>
                 <div className="text-center py-8">
-                  <Github className="w-16 h-16 text-hacker-green/30 mx-auto mb-4" />
+                  <Terminal className="w-16 h-16 text-hacker-green/30 mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">
                     Connect your GitHub account to enable automated repository scanning
                   </p>

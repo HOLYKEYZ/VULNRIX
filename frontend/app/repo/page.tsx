@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Github,
   GitBranch,
+  Terminal,
   Shield,
   Loader2,
   ExternalLink,
@@ -53,7 +53,7 @@ export default function RepoScanPage() {
         <Card className="terminal-border bg-black">
           <CardHeader className="terminal-header p-4">
             <CardTitle className="text-sm font-bold text-hacker-green uppercase tracking-wider flex items-center gap-2">
-              <Github className="w-4 h-4" /> REPOSITORY_CONFIG
+              <Terminal className="w-4 h-4" /> REPOSITORY_CONFIG
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
@@ -140,7 +140,7 @@ export default function RepoScanPage() {
           <CardContent className="p-6">
             {!result && !loading && (
               <div className="flex flex-col items-center justify-center h-[300px] text-center">
-                <Github className="w-12 h-12 text-hacker-green/20 mb-4" />
+                <Terminal className="w-12 h-12 text-hacker-green/20 mb-4" />
                 <p className="text-hacker-green/50 font-mono text-sm uppercase">
                   NO_REPOSITORY_SCANNED
                 </p>
