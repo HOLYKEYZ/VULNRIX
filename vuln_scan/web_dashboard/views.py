@@ -727,3 +727,4 @@ def home(request):
     from django.conf import settings
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
     return redirect(f'{frontend_url}/')
+# Force redeploy Wed Mar 25 01:11:43 WCAST 2026
