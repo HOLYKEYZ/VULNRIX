@@ -26,7 +26,7 @@ services:
     name: vulnrix-frontend
     runtime: node
     rootDirectory: frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --legacy-peer-deps && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
