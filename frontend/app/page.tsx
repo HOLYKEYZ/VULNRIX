@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Search, Code2, Terminal, ArrowRight } from "lucide-react";
 
+// Trigger rebuild
 export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh]">
