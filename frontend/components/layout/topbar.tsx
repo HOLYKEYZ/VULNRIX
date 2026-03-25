@@ -1,7 +1,7 @@
 "use client";
 
 import { Menu, User, LogOut, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 
 interface TopbarProps {
   onMenuClick?: () => void;

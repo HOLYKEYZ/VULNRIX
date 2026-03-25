@@ -16,12 +16,6 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
     "target": "ES2017",
     "plugins": [
       {
@@ -34,8 +28,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next\\dev/types/**/*.ts",
-    ".next\\dev/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
