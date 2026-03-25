@@ -20,6 +20,7 @@ const nextConfig = {
     turbo: {
       resolveAlias: {
         '@/lib/utils': './lib/utils',
+        '@/components/lib/utils': './components/lib/utils',
         '@/components': './components',
       },
     },
