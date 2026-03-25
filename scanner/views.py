@@ -440,8 +440,6 @@ def dashboard(request):
     from django.conf import settings
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
     return redirect(f'{frontend_url}/dashboard')
-        'exposure_trends': json.dumps(exposure_trends)
-    })
 
 
 @login_required
@@ -496,15 +494,7 @@ def attack_surface(request, scan_id):
     from django.conf import settings
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5175')
     return redirect(f'{frontend_url}/footprint')
-        
-    except ScanResult.DoesNotExist:
-        messages.error(request, 'Scan results not found.')
-        return redirect('scanner:dashboard')
-        
-    return render(request, 'attack_surface.html', {
-        'scan': scan,
-        'graph_data': graph_data
-    })
+
 
 @require_http_methods(["GET"])
 def docs(request):
