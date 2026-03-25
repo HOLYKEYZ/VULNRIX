@@ -26,7 +26,7 @@ services:
     name: vulnrix-frontend
     runtime: node
     buildCommand: cd frontend && npm install -g pnpm && pnpm install && pnpm run build
-    startCommand: cd frontend && pnpm start
+    startCommand: cd frontend && npx next start -H 0.0.0.0
     envVars:
       - key: NODE_VERSION
         value: 20.0.0
