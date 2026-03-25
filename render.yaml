@@ -34,8 +34,6 @@ services:
         value: https://vulnrix-api.onrender.com
       - key: NEXT_PUBLIC_SITE_URL
         value: https://vulnrix-frontend.onrender.com
-      - key: NEXTAUTH_SECRET
-        generateValue: true
       - key: GITHUB_CLIENT_ID
         sync: false
       - key: GITHUB_CLIENT_SECRET
